@@ -196,6 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
+.item[data-act]{cursor:pointer}.item[data-act]:active{background:rgba(253,224,71,.06)}.fol{color:var(--y);margin-right:4px}.btn.fol-on{color:var(--y);border-color:rgba(253,224,71,.5)}
 .me-card{position:relative;display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;margin:12px 0 14px;padding:14px 14px 52px;border-radius:20px;border:1px solid #466783;background:radial-gradient(120% 90% at 0% 0%,#2E5A80 0%,#172F46 60%,#0F2237 100%)}
 .me-fig{height:150px;position:relative}.me-card .me-fig .fig{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:100px;height:auto;margin:0;aspect-ratio:2/3}
 .me-info small{display:block;color:#B7CBE0;font-size:12px}.me-name{display:flex;align-items:center;gap:6px;font-size:18px;margin-bottom:6px}
@@ -371,7 +372,7 @@ async function loadClub(){
     const uids=[...new Set(members.map(m=>m.user_id))];
     if(uids.length){const {data:pf}=await sb.from('profiles').select('id,avatar').in('id',uids);(pf||[]).forEach(x=>{if(x.avatar&&Object.keys(x.avatar).length)avatars[x.id]=x.avatar})}
     if(profile&&profile.avatar&&Object.keys(profile.avatar).length)avatars[user.id]=profile.avatar;
-    await loadEvents();await loadGRows();await loadSnaps();
+    await loadEvents();await loadGRows();await loadFollows();await loadSnaps();
     const m=members.find(x=>x.user_id===user.id);role=m?m.role:null;
     if(!m){toast('你已經不在這個俱樂部了');club=null;UI.view='clubs';await loadClubs()}
   }catch(e){toast(errMsg(e))}
@@ -785,20 +786,24 @@ async function loadGlobal(sp){GL[sp]={loading:true};
     GL[sp]={at:Date.now(),list:uids.map(u=>({uid:u,r:R[u].r,g:R[u].g,rel:rel[u],name:(ppl[u]||{}).nickname||'球友',clubs:(ppl[u]||{}).clubs||''})).sort((x,y)=>y.r-x.r)}}
   catch(e){GL[sp]={err:errMsg(e)}}
   if(UI.tab==='rank')render()}
-function globalList(sp){const G=GL[sp];
+function globalList(sp,fr){const G=GL[sp];
   if(!G||(!G.loading&&!G.list&&!G.err)||(G.at&&Date.now()-G.at>120000)){if(!G||!G.loading)loadGlobal(sp);if(!G||!G.list)return `<div class="card"><p class="empty">載入全部球團的排名中…</p></div>`}
   if(G.loading&&!G.list)return `<div class="card"><p class="empty">載入全部球團的排名中…</p></div>`;
   if(G.err)return `<div class="card"><p class="empty">讀取失敗：${esc(G.err)}</p></div>`;
-  if(!G.list.length)return `<div class="card"><p class="empty">還沒有任何${SP[sp]}正式比賽。</p></div>`;
-  return `<div class="card">${G.list.map((x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${esc(x.name)}${x.uid===user.id?'（我）':''}</b><small>${x.g} 場${x.clubs?'・'+esc(x.clubs):''}</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span>${ring(x.rel,40)}</div>`).join('')}</div>`}
+  const list=fr?G.list.filter(x=>x.uid===user.id||FOL.has(x.uid)):G.list;
+  if(fr&&!FOL.size)return `<div class="card"><p class="empty">還沒有追蹤任何人。<br>在「本球團」或「全部球團」點朋友的名字，按「＋ 追蹤」，他就會出現在這裡。</p></div>`;
+  if(!list.length)return `<div class="card"><p class="empty">還沒有任何${SP[sp]}正式比賽。</p></div>`;
+  return `<div class="card">${list.map((x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${folStar(x.uid)}${esc(x.name)}${x.uid===user.id?'（我）':''}</b><small>${x.g} 場${x.clubs?'・'+esc(x.clubs):''}</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span>${ring(x.rel,40)}</div>`).join('')}</div>`}
 
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
-  const all=UI.rankScope==='all';
-  return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(all?'all':'club','rscope',[['club','本球團'],['all','全部球團']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  const sc=UI.rankScope||'club',all=sc==='all',fr=sc==='fr';
+  if(fr){const n=[...FOL].length;return `<h1>天梯排行</h1><p class="sub">好友・追蹤中 ${n} 人</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+    <h2>好友排名</h2>${globalList(sp,true)}<p class="mute" style="font-size:13px">只列出你追蹤的人和你自己（有${SP[sp]}正式比賽的才會出現）。點名字可以看他的對戰紀錄。</p>`}
+  return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
   ${all?`<h2>全部球團排名</h2>${globalList(sp)}<p class="mute" style="font-size:13px">每個人只有一個實力分數：在任何球團打的正式比賽都會一起算。「本球團」只是把同一個分數、限定成本球團的成員來排。</p>`:`
-  <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
+  <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}" ${p.user_id?`data-act="person" data-id="${p.user_id}" role="button" tabindex="0"`:''}><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${folStar(p.user_id)}${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
     ${!ps.length?'<p class="empty">還沒有球員</p>':''}</div>
   <p class="mute" style="font-size:13px">每個人只有一個實力分數，在任何球團打的正式比賽都會一起算；這裡只列本球團的成員。分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`}`;
@@ -875,19 +880,62 @@ async function needPeople(uids){const miss=[...new Set(uids)].filter(u=>u&&!PPL[
 const avatarsKnown=u=>players.some(p=>p.user_id===u);
 const uName=u=>{const p=players.find(x=>x.user_id===u);return p?esc(p.name):PPL[u]?esc(PPL[u].nickname||'球友'):'…'};
 const MYG={};
-function myGlobal(sp){const G=GROWS[sp],uid=user&&user.id;if(!G||!uid)return null;
-  const ex=exclSet(sp),key=EXC[sp].key+'|'+uid;if(MYG[sp]&&MYG[sp].key===key)return MYG[sp].list;
+const myGlobal=sp=>userGlobal(sp,user&&user.id);
+function userGlobal(sp,uid){const G=GROWS[sp];if(!G||!uid)return null;
+  const ex=exclSet(sp),key=EXC[sp].key+'|'+uid,ck=sp+'|'+uid;if(MYG[ck]&&MYG[ck].key===key)return MYG[ck].list;
   const rows=G.slice().sort(gOrder),toR=g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:gTime(g)}),kept=[],list=[];
   rows.forEach(g=>{const all=[...g.a,...g.b];if(all.includes(uid)){const t=gTime(g),R0=fitRows(kept.map(toR),t),R1=ex.has(g.id)?R0:fitRows([...kept,g].map(toR),t);
       const be={};all.forEach(u=>be[u]=R0[u]?R0[u].r:3);list.push({g,be,after:R1[uid]?R1[uid].r:3,skip:ex.has(g.id)})}
     if(!ex.has(g.id))kept.push(g)});
-  list.reverse();MYG[sp]={key,list};return list}
+  list.reverse();MYG[ck]={key,list};return list}
 function mrRowG(x,uid){const g=x.g,inA=g.a.includes(uid),aw=g.sa>g.sb,won=inA?aw:!aw,d=x.after-x.be[uid],local=games.some(o=>o.id===g.id);
-  const team=(lab,ids,sc,w)=>`<div class="mr-team ${w?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(u=>`<span class="mr-p ${u===uid?'is-self':''}">${u===uid?'我':uName(u)}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${w?'<span class="mr-win">勝</span>':''}<span>${sc}</span></span></div>`;
+  const team=(lab,ids,sc,w)=>`<div class="mr-team ${w?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(u=>`<span class="mr-p ${u===uid?'is-self':''}">${u===user.id?'我':uName(u)}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${w?'<span class="mr-win">勝</span>':''}<span>${sc}</span></span></div>`;
   return `<${local?'button':'div'} class="mr-row is-mine ${won?'is-win':'is-loss'}" ${local?`data-act="openGame" data-id="${g.id}"`:''}>
     <div class="mr-meta"><span class="mr-id">${D(g.ended_at)}・${esc(g.club||'')}・${g.a.length===1?'單打':'雙打'}</span><span class="mr-tags">${x.skip?'<span class="mr-dl">不計分</span>':`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`}<span class="mr-res">${won?'勝':'敗'}</span></span></div>
     ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,!aw)}</${local?'button':'div'}>`}
 
+function gStats(MG,uid,hi){let w=0,pf=0,pa=0,pS=0,pN=0,oS=0,oN=0;const lv={up:[0,0],eq:[0,0],dn:[0,0]};
+  MG.forEach(x=>{const g=x.g,inA=g.a.includes(uid),mine=inA?g.a:g.b,opp=inA?g.b:g.a,ms=inA?g.sa:g.sb,os=inA?g.sb:g.sa,won=ms>os,b=u=>x.be[u];
+    if(won)w++;pf+=ms;pa+=os;mine.filter(u=>u!==uid).forEach(u=>{pS+=b(u);pN++});opp.forEach(u=>{oS+=b(u);oN++});hi=Math.max(hi==null?0:hi,x.after);
+    const oAvg=opp.reduce((t,u)=>t+b(u),0)/opp.length,k=oAvg>b(uid)+0.25?'up':oAvg<b(uid)-0.25?'dn':'eq';lv[k][won?0:1]++});
+  return {gl:MG,w,l:MG.length-w,pct:pf+pa?100*pf/(pf+pa):null,avgP:pN?pS/pN:null,avgO:oN?oS/oN:null,hi,lv,clubs:new Set(MG.map(x=>x.g.club)).size}}
+/* ---------- 好友（追蹤制）＋ 球友個人頁 ---------- */
+let FOL=new Set();
+async function loadFollows(){const {data,error}=await sb.from('follows').select('followee');FOL=new Set(error?[]:(data||[]).map(x=>x.followee))}
+const GAB={};
+function gAB(sp){const G=GROWS[sp];if(!G)return null;const ex=exclSet(sp),k=EXC[sp].key;if(GAB[sp]&&GAB[sp].k===k)return GAB[sp].R;
+  const R=fitRows(G.filter(g=>!ex.has(g.id)).map(g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:gTime(g)})),Date.now());GAB[sp]={k,R};return R}
+function relU(uid,sp){const G=GROWS[sp];if(!G||!uid)return 0;const ex=exclSet(sp),now=Date.now(),o=new Set();let W=0;
+  G.forEach(g=>{if(ex.has(g.id))return;const all=[...g.a,...g.b];if(!all.includes(uid))return;W+=Math.pow(.5,Math.max(0,now-gTime(g))/864e5/90);all.forEach(x=>{if(x!==uid)o.add(x)})});
+  return Math.round(100*(.7*Math.min(1,W/20)+.3*Math.min(1,o.size/12)))}
+const folStar=u=>FOL.has(u)?'<span class="fol" aria-label="追蹤中">★</span>':'';
+function vPerson(uid){
+  const sp=UI.rankSport,self=uid===user.id,R=gAB(sp),cur=R&&R[uid],L=userGlobal(sp,uid);
+  if(!L)return `<button class="btn sm ghost" data-act="pBack">‹ 天梯排行</button><div class="card" style="margin-top:10px"><p class="empty">載入中…</p></div>`;
+  const S=gStats(L,uid,cur?cur.r:null),rel=relU(uid,sp),f3=x=>x==null?'—':x.toFixed(3),n=UI.pMore?50:10;
+  needPeople([uid,...L.slice(0,n).flatMap(x=>[...x.g.a,...x.g.b])]);
+  const tile=(v,l)=>`<div class="pf-tile"><b>${v}</b><span>${l}</span></div>`;
+  const lvRow=(k,lab,desc)=>{const [a,b]=S.lv[k],m=a+b;return `<div class="pf-lv"><div><b>${lab}</b><small>${desc}</small></div><div class="pf-bar"><i style="width:${m?100*a/m:0}%"></i></div><span>${a} 勝 ${b} 敗</span></div>`};
+  // 我和他：同隊／對手（從我的角度算勝敗）
+  const h={tw:0,tl:0,vw:0,vl:0};if(!self)L.forEach(x=>{const g=x.g,ua=g.a.includes(uid),ia=g.a.includes(user.id),ib=g.b.includes(user.id);if(!ia&&!ib)return;
+    const iWon=ia?g.sa>g.sb:g.sb>g.sa;if(ia===ua)iWon?h.tw++:h.tl++;else iWon?h.vw++:h.vl++});
+  const hN=h.tw+h.tl+h.vw+h.vl,nm2=uName(uid);
+  return `<button class="btn sm ghost" data-act="pBack">‹ 天梯排行</button>
+  <h1 style="margin-top:10px">${nm2}${self?'（我）':''}</h1><p class="sub">個人數據・${S.clubs>1?`合計 ${S.clubs} 個球團`:L.length?esc(L[0].g.club||''):'所有球團'}</p>
+  <div class="me-card"><div class="me-fig">${figure(avOf(uid),sp)}</div>
+    <div class="me-info"><b class="me-name">${nm2}</b>
+      <small>${SP[sp]}實力分數</small><div class="me-r">${cur?cur.r.toFixed(3):'未定級'}</div>
+      <small>生涯最高 ${S.hi!=null?S.hi.toFixed(3):'—'}</small></div>
+    <div class="me-ring">${ring(rel,64)}<small>可靠度</small></div>
+    ${self?'':FOL.has(uid)?`<button class="btn sm me-edit fol-on" data-act="unfollow" data-id="${uid}">★ 追蹤中</button>`:`<button class="btn sm pri me-edit" data-act="follow" data-id="${uid}">＋ 追蹤</button>`}</div>
+  ${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  ${L.length?`<h2>表現</h2><div class="pf-grid">${tile(`${S.w}-${S.l}`,'戰績（勝-敗）')}${tile(S.pct==null?'—':S.pct.toFixed(1)+'%','平均得分率')}${tile(f3(S.avgP),'平均搭檔分數')}${tile(f3(S.avgO),'平均對手分數')}</div>
+    ${hN?`<h2>我和${nm2}</h2><div class="row2"><div class="card"><small class="mute">當隊友</small><div class="num" style="font-size:22px;font-weight:800">${h.tw} <small style="font-size:13px">勝</small> ${h.tl} <small style="font-size:13px">敗</small></div></div><div class="card"><small class="mute">當對手（我的戰績）</small><div class="num" style="font-size:22px;font-weight:800;color:var(--y)">${h.vw} <small style="font-size:13px">勝</small> ${h.vl} <small style="font-size:13px">敗</small></div></div></div>`:''}
+    <h2>對上不同程度</h2><div class="card">${lvRow('up','比他強','對手平均高 0.25 以上')}${lvRow('eq','差不多','相差 0.25 以內')}${lvRow('dn','比他弱','對手平均低 0.25 以上')}</div>
+    <h2>對戰紀錄</h2><div class="mr-list">${L.slice(0,n).map(x=>mrRowG(x,uid)).join('')}</div>
+    ${L.length>n?`<button class="btn wide ghost" data-act="pMore" style="margin-top:10px">看更多（共 ${L.length} 場）</button>`:''}`
+  :`<div class="card" style="margin-top:12px"><p class="empty">還沒有${SP[sp]}的正式比賽。</p></div>`}
+  <p class="mute" style="font-size:13px;margin-top:14px">追蹤不需要對方同意，對方也不會收到通知；追蹤的人會出現在天梯排行的「好友」。</p>`}
 function myStats(sp,mid){
   const AB=ability(sp),me=AB[mid],ex=exclSet(sp);
   const MG=myGlobal(sp);
@@ -969,7 +1017,7 @@ function render(){
   checkKicked();
   const v=UI.view;let html;
   if(v==='setup')html=vSetup();else if(v==='login')html=vLogin();else if(v==='nick')html=vNick();else if(v==='clubs')html=vClubs();
-  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:vRank,records:vRecords,members:vMembers,avatar:()=>UI.avEdit?vAvatar():vMe()}[UI.tab]||vToday)()}
+  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:()=>UI.person?vPerson(UI.person):vRank(),records:vRecords,members:vMembers,avatar:()=>UI.avEdit?vAvatar():vMe()}[UI.tab]||vToday)()}
   else html=`<div class="empty">載入中…</div>`;
   $('#view').innerHTML=html;
   const inClub=v==='club'&&club;document.body.classList.toggle('nonav',!inClub);
@@ -991,7 +1039,7 @@ const newCode=()=>'PS'+String(Math.floor(1000+Math.random()*9000));
 
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
-  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar'){UI.avd=null;UI.avEdit=false}ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
+  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.person=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar'){UI.avd=null;UI.avEdit=false}ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
   const a=t.dataset.act,id=t.dataset.id,v=t.dataset.v,s=live();
   try{switch(a){
     case 'close':closeModal();return;
@@ -1088,11 +1136,16 @@ document.addEventListener('click',async e=>{
     /* 排名／紀錄 */
     case 'rs':UI.rankSport=v;break;
     case 'rscope':UI.rankScope=v;break;
+    case 'person':UI.person=id;UI.pMore=false;scrollTo(0,0);break;
+    case 'pBack':UI.person=null;break;
+    case 'pMore':UI.pMore=true;break;
+    case 'follow':{t.disabled=true;const {error}=await sb.from('follows').insert({followee:id});if(error&&error.code!=='23505'){toast(errMsg(error));t.disabled=false;return}FOL.add(id);toast('已追蹤，會出現在「好友」排行');break}
+    case 'unfollow':{t.disabled=true;const {error}=await sb.from('follows').delete().eq('follower',user.id).eq('followee',id);if(error){toast(errMsg(error));t.disabled=false;return}FOL.delete(id);toast('已取消追蹤');break}
     case 'detF':UI.detMine=v==='mine';break;
     case 'meSp':UI.meSport=v;break;
     case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
     case 'avEditOff':UI.avEdit=false;break;
-    case 'tabRank':UI.tab='rank';UI.rankSport=UI.meSport||UI.form.sport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
+    case 'tabRank':UI.tab='rank';UI.person=null;UI.rankSport=UI.meSport||UI.form.sport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
     case 'tabRecords':UI.tab='records';UI.detail=null;ls.set('pbc-tab','records');scrollTo(0,0);break;
     case 'recF':UI.recSport=v;break;
     case 'detail':UI.detail=id;scrollTo(0,0);break;
@@ -1140,6 +1193,7 @@ document.addEventListener('input',e=>{
     if(el)el.innerHTML=!isNaN(x)&&!isNaN(y)?(x===y?'比分不能平手':`${x>y?'A':'B'} 隊獲勝<small>${s&&winner(s,x,y)?'符合勝利條件':'未達勝利條件（時間到可照樣送出）'}</small>`):'<small>輸入兩隊分數</small>'}
 });
 document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.matches&&e.target.matches('[role=button][data-act]')){e.preventDefault();e.target.click();return}
   if(e.key!=='Enter'||e.isComposing)return;const id=e.target.id;
   const goBtn=sel=>{e.preventDefault();const b=$(sel);if(b)b.click()};
   if(id==='code')goBtn('[data-act=join]');else if(id==='cname')goBtn('[data-act=create]');else if(id==='rcode')goBtn('[data-act=codeJoin]');
