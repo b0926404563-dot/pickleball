@@ -280,7 +280,7 @@ function invert(M){const n=M.length,a=M.map((r,i)=>[...r,...r.map((_,j)=>i===j?1
   return a.map(r=>r.slice(n))}
 function ability(sport,onlySid,lam=3,o={}){
   const now=o.now||Date.now(),rows=[],cnt={},f=RS[sport];
-  games.forEach(g=>{if(g.status!=='confirmed'||g.a.length!==g.b.length)return;if(o.filt&&!o.filt(g))return;const s=sessById(g.session_id);if(!s||s.sport!==sport||(onlySid&&s.id!==onlySid))return;
+  games.forEach(g=>{if(g.status!=='confirmed'||g.a.length!==g.b.length)return;if(o.filt&&!o.filt(g))return;if(!o.raw&&exclSet(sport).has(g.id))return;const s=sessById(g.session_id);if(!s||s.sport!==sport||(onlySid&&s.id!==onlySid))return;
     const t=new Date(g.ended_at||s.started_at).getTime(),w=Math.pow(.5,Math.max(0,now-t)/864e5/90);
     rows.push({a:g.a,b:g.b,y:Math.log((g.sa+.5)/(g.sb+.5)),w});[...g.a,...g.b].forEach(id=>cnt[id]=(cnt[id]||0)+1)});
   const ids=Object.keys(cnt).filter(id=>P(id)),n=ids.length,ix={};if(!n)return{};ids.forEach((id,i)=>ix[id]=i);
@@ -536,6 +536,22 @@ function vCreate(){
 }
 
 
+
+/* ---------- DUPR 新規則（2026）：賽前兩隊平均差 ≥ 0.5 且強隊贏 → 這場不計分；爆冷照算 ---------- */
+const GAP=0.5,EXC={};
+const gOrder=(x,y)=>gTime(x)-gTime(y)||String(x.created_at).localeCompare(String(y.created_at));
+function exclSet(sport){
+  const gl=games.filter(g=>g.status==='confirmed'&&g.a.length===g.b.length&&(sessById(g.session_id)||{}).sport===sport).sort(gOrder);
+  const key=gl.map(g=>g.id+g.sa+'-'+g.sb+(g.ended_at||'')).join('|');
+  if(EXC[sport]&&EXC[sport].key===key)return EXC[sport].set;
+  const set=new Set(),info={},done=[];
+  gl.forEach(g=>{const ids=new Set(done),R=ability(sport,null,3,{raw:true,filt:x=>ids.has(x.id),now:gTime(g)});
+    const av=t=>t.reduce((s,p)=>s+(R[p]?R[p].r:3),0)/t.length,ga=av(g.a),gb=av(g.b),gap=Math.abs(ga-gb),favA=ga>gb,aWon=g.sa>g.sb;
+    info[g.id]={gap,fav:favA?'a':'b',ga,gb};
+    if(gap>=GAP&&favA===aWon)set.add(g.id);else done.push(g.id)});
+  EXC[sport]={key,set,info};return set}
+const gapInfo=g=>{const s=sessById(g.session_id);if(!s)return null;exclSet(s.sport);return (EXC[s.sport].info||{})[g.id]||null};
+
 /* ---------- 每場比賽的分數變化（V004 rating_snaps） ---------- */
 let SN={};   // game_id → {player_id:{b,a}}
 const gTime=g=>{const s=sessById(g.session_id);return new Date(g.ended_at||(s&&s.started_at)||g.created_at).getTime()};
@@ -568,6 +584,9 @@ function snapCard(g,s,mid){const sn=SN[g.id];if(g.status!=='confirmed')return ''
   const e=expScore(g,s,sn),row=pid=>{const x=sn[pid];if(!x)return '';const d=x.a-x.b;
     return `<div class="dl-row ${pid===mid?'is-self':''}">${headImg(pid,'s')}<div class="grow"><b>${nm(pid)}${pid===mid?'（我）':''}</b>${x.b===3&&!games.some(o=>o.id!==g.id&&o.status==='confirmed'&&[...o.a,...o.b].includes(pid)&&gTime(o)<gTime(g))?'<small>第一場</small>':''}</div>
       <span class="dl-b">${x.b.toFixed(3)}</span><span class="dl-d ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span><span class="dl-a">${x.a.toFixed(3)}</span></div>`};
+  const gi=gapInfo(g),skip=gi&&gi.gap>=GAP&&((gi.fav==='a')===(g.sa>g.sb)),upset=gi&&gi.gap>=GAP&&!skip;
+  if(skip)return `<h2>這場的分數變化</h2><div class="card">${[...g.a,...g.b].filter(p=>sn[p]).map(p=>`<div class="dl-row ${p===mid?'is-self':''}">${headImg(p,'s')}<div class="grow"><b>${nm(p)}${p===mid?'（我）':''}</b></div><span class="dl-b">${sn[p].b.toFixed(3)}</span><span class="dl-d">±0</span><span class="dl-a">${sn[p].a.toFixed(3)}</span></div>`).join('')}
+    <p class="dl-why">這場不計分。賽前兩隊平均分數差 ${gi.gap.toFixed(2)}（${gi.fav==='a'?'A':'B'} 隊較強），而且由較強的隊伍獲勝。依 DUPR 最新規則：差距 0.5 以上、強隊贏，四個人的分數都不變，比數多少都一樣。</p></div>`;
   let why='';if(mid&&sn[mid]){const myA=g.a.includes(mid),exM=myA?e.a-e.b:e.b-e.a,acM=myA?g.sa-g.sb:g.sb-g.sa,d=sn[mid].a-sn[mid].b,gap=acM-exM;
     const perf=gap>=4?'比預期好很多':gap>0?'比預期好一點':gap<=-4?'比預期差很多':gap<0?'比預期差一點':'跟預期差不多';
     const res=d>=0.0005?'加 '+fmtD(d).slice(1):d<=-0.0005?'扣 '+fmtD(d).slice(1):'分數幾乎不變';
@@ -577,6 +596,7 @@ function snapCard(g,s,mid){const sn=SN[g.id];if(g.status!=='confirmed')return ''
     if((gap<0&&d>0.0005)||(gap>0&&d<-0.0005)){
       note=rookie?`這場${gap<0?'輸掉的分數':'多贏的分數'}主要算在搭檔 ${nm(rookie)} 身上（他打不到 3 場，分數還在定級，變動比較大），所以你反而${d>0?'小加':'小扣'}。`
         :`系統會用所有比賽一起重新校正，這場也讓大家過去幾場的表現被重新評估，所以你的分數反而${d>0?'小加':'小扣'}。`}
+    if(upset)note=`以下剋上！賽前兩隊平均差 ${gi.gap.toFixed(2)}，由較弱的一方獲勝，依 DUPR 規則照常計分。`+note;
     why=`<p class="dl-why">賽前預估 ${myA?e.a:e.b}：${myA?e.b:e.a}（${exM>0?'你們隊較強':exM<0?'對手較強':'實力相當'}），實際 ${myA?g.sa:g.sb}：${myA?g.sb:g.sa}，${perf}。${note||`所以${res}。`}</p>`}
   return `<h2>這場的分數變化</h2><div class="card"><div class="dl-head"><span>A 隊</span><span>賽前</span><span>加減</span><span>賽後</span></div>${g.a.map(row).join('')}
     <div class="dl-head" style="margin-top:6px"><span>B 隊</span><span></span><span></span><span></span></div>${g.b.map(row).join('')}
@@ -730,7 +750,7 @@ function mrRow(g,s,mid){
   const iWon=mine&&ok&&(g.a.includes(mid)?aw:bw),iLost=mine&&ok&&!iWon&&(aw||bw),single=g.a.length===1;
   const team=(lab,ids,sc,won)=>`<div class="mr-team ${won?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(id=>`<span class="mr-p ${id===mid?'is-self':''}">${nm(id)}${id===mid?'（我）':''}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${won?'<span class="mr-win">勝</span>':''}<span>${sc==null?'—':sc}</span></span></div>`;
   return `<button class="mr-row ${mine?'is-mine':''} ${iWon?'is-win':''} ${iLost?'is-loss':''} ${ok?'':'is-pending'}" data-act="openGame" data-id="${g.id}">
-    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${mine&&ok&&SN[g.id]&&SN[g.id][mid]?(d=>`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`)(SN[g.id][mid].a-SN[g.id][mid].b):''}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
+    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${ok&&(gi=>gi&&gi.gap>=GAP&&((gi.fav==='a')===(g.sa>g.sb)))(gapInfo(g))?'<span class="mr-dl">不計分</span>':mine&&ok&&SN[g.id]&&SN[g.id][mid]?(d=>`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`)(SN[g.id][mid].a-SN[g.id][mid].b):''}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
     ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,bw)}</button>`}
 function vDetail(s){
   const gl=gamesOf(s.id).filter(g=>g.status!=='open'),cf=gl.filter(g=>g.status==='confirmed'),st=statsOf(cf),AB=ability(s.sport,s.id);
