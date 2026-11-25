@@ -822,7 +822,12 @@ document.addEventListener('click',async e=>{
     case 'report':{const x=parseInt($('#xa').value),y=parseInt($('#xb').value);
       if(isNaN(x)||isNaN(y)){toast('請填兩隊的分數');return}if(x===y){toast('比分不能平手');return}
       t.disabled=true;await rpc('report_score',{gid:id,x,y});UI.edit=null;UI.fill=null;toast(isAdmin()?'已送出':'已送出，等對手確認');await loadClub();await ensureRounds();return}
-    case 'confirm':t.disabled=true;await rpc('confirm_score',{gid:id});toast('已確認，列入正式戰績');await loadClub();return;
+    case 'confirm':{t.disabled=true;await rpc('confirm_score',{gid:id});await loadClub();
+      // 確認完自動回到房間（房間還開著、自己在房裡）
+      const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id),me=myP();UI.edit=null;UI.fill=null;
+      if(r&&r.status!=='done'&&me&&inRoom(r,me.id)){UI.game=null;setRoom(r.id);go('games');render();toast('已確認，回到房間')}
+      else{if(UI.game===id)UI.game=null;render();toast('已確認，列入正式戰績')}
+      return}
     case 'edit':{const g=games.find(x=>x.id===id);UI.edit=id;UI.fill={id,x:g&&g.sa!=null?g.sa:'',y:g&&g.sb!=null?g.sb:''};break}
     case 'editOff':UI.edit=null;UI.fill=null;break;
     /* 排名／紀錄 */
