@@ -61,12 +61,15 @@ create table sessions(
   name text,                                        -- 房間名稱
   status text not null default 'lobby' check (status in ('lobby','live','done')),  -- 等待中/比賽中/結束
   present uuid[] not null default '{}',             -- 出席球員 id
+  code text,                                        -- 6 碼房間代碼（PS1234）
+  ready uuid[] not null default '{}',               -- 已準備的球員 id
   away uuid[] not null default '{}',                -- 先離場的球員 id
   started_at timestamptz not null default now(),
   ended_at timestamptz,
   created_by uuid references profiles(id) default auth.uid()
 );
 create index on sessions(club_id, started_at desc);
+create unique index sessions_open_code on sessions(code) where status <> 'done' and code is not null;
 
 create table games(
   id uuid primary key default gen_random_uuid(),
@@ -83,6 +86,7 @@ create table games(
   confirmed_by uuid references profiles(id),
   ended_at timestamptz,
   created_at timestamptz not null default now(),
+  started_at timestamptz,                           -- 房主按「開始這場」的時間
   unique (session_id, rn, court)
 );
 create index on games(club_id);
@@ -349,3 +353,78 @@ grant execute on function score_point(uuid,text,uuid), score_undo(uuid) to authe
 do $$ begin
   alter publication supabase_realtime add table score_events;
 exception when others then null; end $$;
+
+-- ---------- V001：房間代碼、準備、場次開打 ----------
+create or replace function room_by_code(p_code text) returns uuid
+language plpgsql security definer stable set search_path = public as $$
+declare sid uuid;
+begin
+  select id into sid from sessions
+   where upper(code) = upper(trim(p_code)) and status <> 'done' and is_member(club_id)
+   order by started_at desc limit 1;
+  if sid is null then raise exception '找不到這個房間代碼（或你不是這個球團的成員）'; end if;
+  return sid;
+end $$;
+
+create or replace function room_ready(sid uuid, val boolean) returns void
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; pid uuid;
+begin
+  select club_id into cid from sessions where id = sid;
+  if cid is null or not is_member(cid) then raise exception '找不到這個房間'; end if;
+  select id into pid from players where club_id = cid and user_id = auth.uid();
+  if pid is null then raise exception '你在這個球團還沒有球員資料'; end if;
+  update sessions set ready = case when val then (case when pid = any(ready) then ready else array_append(ready, pid) end)
+                                   else array_remove(ready, pid) end
+   where id = sid;
+end $$;
+
+create or replace function game_start(gid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g games; s sessions; n int;
+begin
+  select * into g from games where id = gid;
+  if g.id is null or not is_member(g.club_id) then raise exception '沒有權限'; end if;
+  select * into s from sessions where id = g.session_id;
+  if s.status <> 'live' then raise exception '比賽還沒開始或已結束'; end if;
+  if not (s.created_by = auth.uid() or is_admin(g.club_id)) then raise exception '只有房主或團長／幹部可以開始場次'; end if;
+  if g.status <> 'open' then raise exception '這場已經打完了'; end if;
+  if g.started_at is not null then return; end if;
+  if exists(select 1 from games x where x.session_id = g.session_id and x.id <> g.id and x.status = 'open'
+             and x.started_at is not null and (x.a || x.b) && (g.a || g.b)) then
+    raise exception '有球員正在另一場比賽中';
+  end if;
+  select count(*) into n from games x where x.session_id = g.session_id and x.status = 'open' and x.started_at is not null;
+  if n >= coalesce((s.cfg->>'courts')::int, 1) then raise exception '場地都在使用中'; end if;
+  update games set started_at = now() where id = gid;
+end $$;
+
+create or replace function game_stop(gid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g games; s sessions;
+begin
+  select * into g from games where id = gid;
+  if g.id is null or not is_member(g.club_id) then raise exception '沒有權限'; end if;
+  select * into s from sessions where id = g.session_id;
+  if not (s.created_by = auth.uid() or is_admin(g.club_id)) then raise exception '只有房主或團長／幹部可以取消開打'; end if;
+  if g.status <> 'open' then raise exception '這場已經送出比分了'; end if;
+  if exists(select 1 from score_events e where e.game_id = gid and not e.voided) then raise exception '這場已經有記分，請先復原到 0:0'; end if;
+  update games set started_at = null where id = gid;
+end $$;
+
+create or replace function score_point(gid uuid, sd text, cid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g games;
+begin
+  select * into g from games where id = gid;
+  if g.id is null or not is_member(g.club_id) then raise exception '沒有權限'; end if;
+  if sd not in ('a','b') then raise exception '隊伍不對'; end if;
+  if g.status <> 'open' then raise exception '這場已經送出比分了'; end if;
+  if g.started_at is null then raise exception '這場還沒開始，請房主先按「開始這場」'; end if;
+  if not exists(select 1 from sessions s where s.id = g.session_id and s.status = 'live') then raise exception '比賽尚未開始或已結束'; end if;
+  if not can_score(g) then raise exception '只有場上球員或房主可以記分'; end if;
+  insert into score_events(game_id, club_id, side, client_id) values (gid, g.club_id, sd, cid)
+  on conflict (client_id) do nothing;
+end $$;
+
+grant execute on function room_by_code(text), room_ready(uuid,boolean), game_start(uuid), game_stop(uuid) to authenticated;
