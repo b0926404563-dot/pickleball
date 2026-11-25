@@ -288,16 +288,17 @@ function makeRound(s,gl,rn,R){
   }
   return best.map((g,i)=>({session_id:s.id,club_id:s.club_id,rn,court:i+1,a:g.a,b:g.b}));
 }
-async function genRounds(s,n){
+async function genRounds(s,n,limit){
   if(UI.gen)return;const gl=gamesOf(s.id).slice(),AB=ability(s.sport),R=id=>AB[id]?AB[id].b:0;
   let rn=Math.max(0,...gl.map(g=>g.rn));const rows=[];
   for(let i=0;i<n;i++){const r=makeRound(s,gl,++rn,R);if(!r)break;rows.push(...r);gl.push(...r)}
+  if(limit>0&&rows.length>limit)rows.length=limit;
   if(!rows.length){toast('房內人數不夠排一場');return}
   UI.gen=true;const {error}=await sb.from('games').insert(rows);UI.gen=false;
   if(error&&error.code!=='23505')toast(errMsg(error));
   await loadClub();
 }
-async function ensureRounds(){const s=live();if(!s||UI.gen)return;if(!queued(s).length&&!onCourt(s).length)await genRounds(s,1)}
+async function ensureRounds(){const s=live();if(!s||UI.gen||(s.cfg&&+s.cfg.games))return;if(!queued(s).length&&!onCourt(s).length)await genRounds(s,1)}
 
 /* ---------- 資料載入 ---------- */
 async function fetchAll(t,cid,col,asc){let out=[],from=0;
@@ -397,6 +398,10 @@ const SERVE={rally:'落地得分',side:'發球得分'};
 const tgtOpts=sp=>sp==='badminton'?[15,21,0]:[11,15,21,0];
 function perGameMin(f){const t=+f.target||(f.sport==='badminton'?21:11);return f.sport==='badminton'?Math.round(t*.7+2):Math.round(t*(f.serve==='side'?1.5:1)+3)}
 const estRounds=f=>Math.max(1,Math.floor((+f.dur||120)/perGameMin(f)));
+const GOPTS=[4,6,8,10,12,15,20,25,30];
+// 今天預計打幾場：房主指定的場數優先，沒指定就依場地時間估
+const planGames=s=>{const c=s.cfg||{};return +c.games||estRounds(Object.assign({sport:s.sport},c))*Math.max(1,courtsUsed(s))};
+function gamesSelect(id,val,auto){return `<select id="${id}"><option value="0" ${!+val?'selected':''}>自動：依場地時間（約 ${auto} 場）</option>${GOPTS.map(n=>`<option value="${n}" ${+val===n?'selected':''}>${n} 場</option>`).join('')}${+val&&!GOPTS.includes(+val)?`<option value="${+val}" selected>${+val} 場</option>`:''}</select>`}
 const ruleTxt=s=>{const c=s.cfg||{};return `${c.target?'目標 '+c.target+' 分':'不限分數'}${c.target&&c.win2?'・領先 2 分':''}${c.cap?'・'+c.cap+' 分封頂':''}`};
 const modeTxt=s=>`${SP[s.sport]}${per(s)===4?'雙打':'單打'}`;
 const seqOf=(g,s)=>gamesOf(s.id).indexOf(g)+1;
@@ -481,6 +486,8 @@ function vCreate(){
   <label class="lb" for="durSel">場地時間</label>
   <select id="durSel">${[60,90,120,150,180,240].map(m=>`<option value="${m}" ${(+f.dur||120)===m?'selected':''}>${m%60?(m/60).toFixed(1):m/60} 小時（${m} 分鐘）</option>`).join('')}</select>
   <p class="mute" style="font-size:13px;margin-top:8px">預估每場約 ${perGameMin(f)} 分鐘，${c} 面場地可打約 <b style="color:var(--y)">${n*c} 場</b>；開始後依實際人數排出對戰組合，晚到的人加入後可重排。</p>
+  <label class="lb" for="gamesSel">今天打幾場</label>${gamesSelect('gamesSel',f.games,n*c)}
+  <p class="mute" style="font-size:13px;margin-top:6px">排滿這個場數就停；打完會提醒房主結束活動，想多打可以再加。</p>
   <details class="more" ${UI.more?'open':''}><summary>更多設定</summary>
     <label class="lb" for="rname">房間名稱</label><input type="text" id="rname" maxlength="24" placeholder="${esc(me?me.name:'')} 的房間" value="${esc(f.rname||'')}">
     <label class="lb">型式</label>${seg(f.mode,'fMode',[['doubles','雙打（輪換搭檔）'],['singles','單打']])}
@@ -528,9 +535,10 @@ function vWait(s){
   <div class="row2">${me?(inR?`<button class="btn" data-act="ready" data-v="${rd.includes(mid)?0:1}">${rd.includes(mid)?'取消準備':'我準備好了'}</button><button class="btn ghost" data-act="rleave" data-id="${s.id}">離開房間</button>`
     :joinBtn(s,mid)+'<span></span>'):''}</div>
   <button class="btn wide" data-act="copyRoom" data-id="${s.id}" style="margin-top:10px">邀請球友（複製連結）</button>
-  ${host?`<details class="more"><summary>房主設定</summary><label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
+  ${host?`<label class="lb" for="rGamesSel">今天打幾場</label>${gamesSelect('rGamesSel',s.cfg&&s.cfg.games,estRounds(Object.assign({sport:s.sport},s.cfg))*Math.max(1,courtsUsed(s)))}
+  <details class="more"><summary>房主設定</summary><label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
     <button class="btn warn wide" data-act="rcloseAsk" style="margin-top:14px">解散房間</button></details>
-  <div class="foot"><button class="btn pri wide" data-act="rstart" ${ids.length<k?'disabled':''}>${ids.length<k?`還差 ${k-ids.length} 人`:'開始比賽'}<small>${ids.length>=k?`不用等全員準備・預估排 ${estRounds(Object.assign({sport:s.sport},s.cfg))*courtsUsed(s)} 場`:'人數不夠'}</small></button></div>`
+  <div class="foot"><button class="btn pri wide" data-act="rstart" ${ids.length<k?'disabled':''}>${ids.length<k?`還差 ${k-ids.length} 人`:'開始比賽'}<small>${ids.length>=k?`不用等全員準備・排 ${planGames(s)} 場`:'人數不夠'}</small></button></div>`
   :`<p class="mute" style="text-align:center;margin-top:14px">等待房主 ${esc(hostP?hostP.name:'')} 開始比賽…</p>`}`;
 }
 function vPlay(s){
@@ -539,8 +547,11 @@ function vPlay(s){
   const startBtn=g=>host?`<button class="btn sm ${g===rec?'pri':''}" data-act="gStart" data-id="${g.id}" ${!fc||[...g.a,...g.b].some(id=>busy.has(id))?'disabled':''}>開始這場</button>`:'';
   return `<button class="btn sm ghost" data-tab="today">‹ 大廳</button>
   <h1 style="margin-top:10px">房間比賽中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
+  <p style="margin:-6px 0 12px"><span class="pill y">已打 ${done.length} 場${(s.cfg&&+s.cfg.games)?` / 今天 ${+s.cfg.games} 場`:''}・還有 ${q.length+on.length} 場</span></p>
   ${reqCard(s)}
   ${pendingCard()}
+  ${!on.length&&!q.length&&done.length?`<div class="card hl" style="text-align:center"><h3 style="margin:0 0 4px">🎉 今天排的 ${done.length} 場都打完了</h3>
+    ${host?`<p class="mute" style="margin:0 0 12px">要收工就結束活動；還想打，就再加一輪。</p><div class="row2"><button class="btn pri" data-act="endAsk">結束今天的活動</button><button class="btn" data-act="addRound">再加一輪</button></div>`:'<p class="mute" style="margin:0">等房主結束今天的活動。</p>'}</div>`:''}
   <h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
   ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
     <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
@@ -555,7 +566,8 @@ function vPlay(s){
   ${host?`<details class="more"><summary>房主設定</summary>
     <label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
     <label class="lb">房內球員</label>${(s.present||[]).filter(P).map(id=>{const off=(s.away||[]).includes(id);return `<div class="item">${headImg(id,'s')}<div class="grow"><b>${nm(id)}</b><small>${off?'先離開':'在場'}</small></div>${id!==mid?`<button class="btn sm" data-act="kick" data-id="${id}">${off?'回到場上':'先離開'}</button>`:''}</div>`}).join('')}${addBtn(s)}
-    <div class="stack" style="margin-top:14px"><button class="btn wide" data-act="addRound">再排一輪</button><button class="btn wide" data-act="reshuffleAsk">人數有變動：重排還沒開打的場次</button><button class="btn warn wide" data-act="endAsk">結束比賽、關閉房間</button></div></details>`:''}`;
+    <div class="stack" style="margin-top:14px"><button class="btn wide" data-act="addRound">再排一輪</button><button class="btn wide" data-act="reshuffleAsk">人數有變動：重排還沒開打的場次</button></div></details>`:''}
+  ${host?`<button class="btn warn wide" data-act="endAsk" style="margin-top:12px">結束今天的活動</button>`:''}`;
 }
 
 /* ---------- 05 即時計分／06 填比分與確認 ---------- */
@@ -748,7 +760,7 @@ document.addEventListener('click',async e=>{
     case 'fWin2':UI.form.win2=v==='1';saveForm();break;
     case 'fServe':UI.form.serve=v;saveForm();break;
     case 'createRoom':{const me=myP();if(!me)return;const f=UI.form;readCreate();saveForm();t.disabled=true;
-      const cfg={mode:f.mode,courts:+f.courts||1,target:+f.target,score:f.score||'final',win2:!!f.win2,dur:+f.dur||120,serve:f.sport==='pickleball'?(f.serve||'rally'):'rally'};
+      const cfg={mode:f.mode,courts:+f.courts||1,target:+f.target,score:f.score||'final',win2:!!f.win2,dur:+f.dur||120,games:+f.games||0,serve:f.sport==='pickleball'?(f.serve||'rally'):'rally'};
       if(f.sport==='badminton'&&cfg.win2&&cfg.target===21)cfg.cap=30;
       let data=null,error=null;
       for(let i=0;i<5;i++){({data,error}=await sb.from('sessions').insert({club_id:club.id,sport:f.sport,cfg,place:f.place||null,name:(f.rname||'').trim()||null,status:'lobby',present:[],code:newCode()}).select().single());if(!error||error.code!=='23505')break}
@@ -781,15 +793,15 @@ document.addEventListener('click',async e=>{
       if(r.status==='lobby')await saveSess(r,{present:r.present.filter(x=>x!==id),ready:(r.ready||[]).filter(x=>x!==id)});
       else{const aw=r.away||[];await saveSess(r,{away:aw.includes(id)?aw.filter(x=>x!==id):[...aw,id]});toast('已更新，按「重排」套用到還沒開打的場次')}return}
     case 'rstart':{const r=room();if(!r)return;t.disabled=true;await saveSess(r,{status:'live',started_at:new Date().toISOString()});
-      await genRounds(r,estRounds(Object.assign({sport:r.sport},r.cfg)));toast('對戰組合排好了，點「開始這場」開打！');return}
+      {const N=planGames(r),cu=Math.max(1,courtsUsed(r));await genRounds(r,Math.ceil(N/cu),N)}toast('對戰組合排好了，點「開始這場」開打！');return}
     case 'addRound':{const r=room();if(!r)return;t.disabled=true;await genRounds(r,1);toast('已再排一輪');return}
     case 'rcloseAsk':modal(`<h3>解散房間？</h3><p>房間會關閉，房內的人回到大廳。</p><div class="row2"><button class="btn warn" data-act="rclose">解散</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'rclose':{closeModal();const r=room();if(!r)return;await saveSess(r,{status:'done',ended_at:new Date().toISOString()});setRoom(null);go('today');await loadClub();toast('房間已解散');return}
     case 'reshuffleAsk':modal(`<h3>重排還沒開打的場次</h3><p>依照現在房內的球員重新排對戰組合。正在打和已打完的場次不受影響。</p><div class="row2"><button class="btn pri" data-act="reshuffle">重排</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'reshuffle':{closeModal();if(!s)return;const q=queued(s),n=Math.max(1,Math.ceil(q.length/Math.max(1,courtsUsed(s))));
       if(q.length){const {error}=await sb.from('games').delete().in('id',q.map(g=>g.id)).eq('status','open').is('started_at',null);if(error){toast(errMsg(error));return}games=games.filter(g=>!q.includes(g))}
-      await genRounds(s,n);toast('已重新排好');return}
-    case 'endAsk':modal(`<h3>結束比賽、關閉房間？</h3><p>還沒打的場次會清掉；已填的比分會保留，等待確認的之後還是可以確認。</p><div class="row2"><button class="btn warn" data-act="end">結束</button><button class="btn" data-act="close">取消</button></div>`);return;
+      await genRounds(s,n,q.length||0);toast('已重新排好');return}
+    case 'endAsk':modal(`<h3>結束今天的活動？</h3><p>房間會關閉，大家回到大廳。還沒打的場次會清掉；已填的比分會保留，等待確認的之後還是可以確認。</p><div class="row2"><button class="btn warn" data-act="end">結束</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'end':{closeModal();const del=gamesOf(s.id).filter(g=>g.status==='open').map(g=>g.id);
       if(del.length)await sb.from('games').delete().in('id',del).eq('status','open');
       await saveSess(s,{status:'done',ended_at:new Date().toISOString()});setRoom(null);UI.detail=s.id;go('records');await loadClub();toast('比賽結束，戰績已存檔');return}
@@ -846,10 +858,11 @@ document.addEventListener('click',async e=>{
   render();
 });
 function readCreate(){const f=UI.form,g=k=>$('#'+k);if(g('rname'))f.rname=g('rname').value;if(g('place'))f.place=g('place').value.trim();
-  if(g('tgtSel'))f.target=+g('tgtSel').value;if(g('durSel'))f.dur=+g('durSel').value;const d=$('details.more');UI.more=!!(d&&d.open)}
+  if(g('tgtSel'))f.target=+g('tgtSel').value;if(g('durSel'))f.dur=+g('durSel').value;if(g('gamesSel'))f.games=+g('gamesSel').value;const d=$('details.more');UI.more=!!(d&&d.open)}
 document.addEventListener('change',e=>{
   const tg=e.target;
-  if(['tgtSel','durSel','rname','place'].includes(tg.id)){readCreate();saveForm();if(tg.tagName==='SELECT')setTimeout(render,0)}
+  if(tg.id==='rGamesSel'){const r=room();if(r&&isHost(r))saveSess(r,{cfg:Object.assign({},r.cfg,{games:+tg.value})});return}
+  if(['tgtSel','durSel','gamesSel','rname','place'].includes(tg.id)){readCreate();saveForm();if(tg.tagName==='SELECT')setTimeout(render,0)}
 });
 document.addEventListener('toggle',e=>{if(e.target.matches&&e.target.matches('details.more'))UI.more=e.target.open},true);
 document.addEventListener('input',e=>{
