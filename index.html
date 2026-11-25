@@ -49,7 +49,7 @@ p{margin:0 0 14px}
 .btn.pri{background:linear-gradient(var(--y2),var(--y));color:var(--navy);border-color:var(--y)}
 .btn.warn{background:transparent;border-color:var(--bad);color:var(--bad)}
 .btn.ghost{background:transparent}
-.btn.sm{min-height:40px;padding:6px 12px;font-size:14px}
+.btn.sm{min-height:40px;padding:6px 12px;font-size:14px;white-space:nowrap;flex:none}
 .btn.wide{width:100%}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn small{display:block;font-weight:500;font-size:12px;opacity:.85}
@@ -369,6 +369,7 @@ async function afterAuth(){
 }
 
 
+const TESTN=(()=>{const v=parseInt(new URLSearchParams(location.search).get('test'));return v>=1&&v<=20?v:0})();
 /* ---------- 角色素材（design/v001/manifest：握點以原圖像素、左上為原點；球拍 0.45 倍、先畫球拍再畫角色） ---------- */
 const AVM={
   av:[['avatar_preset_01','球場新秀',[313,596]],['avatar_preset_02','快攻少女',[305,592]],['avatar_preset_03','穩健防守',[307,592]],
@@ -422,7 +423,10 @@ function pendingCard(){
 function vSetup(){return `<div class="card hero2"><h2>還差一步：連上資料庫</h2><p class="mute">請在 index.html 最上面填入 Supabase 的網址和 anon key。</p></div>`}
 function vLogin(){const a=avOf('demo');return `<div class="hero2">${figure({av:'avatar_preset_01',pb:'paddle_01'},'pickleball')}<h1>一起打球，一起記分</h1>
   <p class="mute">開房、自動排對戰、即時計分、對手確認，<br>匹克球和羽球各有自己的實力分數。</p>
-  <button class="gbtn" data-act="google">${gIcon}用 Google 帳號登入</button>
+  ${TESTN?`<div class="card" style="text-align:left"><b>測試登入（第 ${TESTN} 號分頁）</b><p class="mute">每個分頁各自登入一個測試帳號，關掉分頁就登出。</p>
+  <label class="lb" for="temail">測試帳號</label><input type="text" id="temail" autocapitalize="off" value="test${String(TESTN).padStart(2,'0')}@picklescore.test">
+  <label class="lb" for="tpw">密碼</label><input type="password" id="tpw" autocomplete="current-password">
+  <div class="stack"><button class="btn pri wide" data-act="tlogin">登入測試帳號</button></div></div>`:`<button class="gbtn" data-act="google">${gIcon}用 Google 帳號登入</button>`}
   <p class="mute" style="margin-top:14px">${new URLSearchParams(location.search).get('join')?'登入後會自動加入邀請你的球團。':'第一次登入會請你取一個暱稱。'}</p><p><a href="privacy.html" style="color:var(--y)">隱私權政策</a></p></div>`}
 function vNick(){const def=(user&&user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name))||'';
   return `<h1>取一個暱稱</h1><p class="sub">大家會在名單和排名上看到這個名字，不能跟別人重複。</p>
@@ -683,6 +687,7 @@ document.addEventListener('click',async e=>{
   try{switch(a){
     case 'close':closeModal();return;
     case 'google':{const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname+location.search}});if(error)toast(errMsg(error));return}
+    case 'tlogin':{const {error}=await sb.auth.signInWithPassword({email:$('#temail').value.trim(),password:$('#tpw').value});if(error)toast(error.message.includes('Invalid')?'帳號或密碼不對':errMsg(error));return}
     case 'logout':closeModal();if(chan){sb.removeChannel(chan);chan=null}club=null;await sb.auth.signOut();return;
     case 'saveNick':{const n=$('#nick').value.trim();if(!n){toast('請輸入暱稱');return}
       const {data,error}=await sb.from('profiles').upsert({id:user.id,nickname:n}).select().single();if(error){toast(errMsg(error));return}
@@ -815,7 +820,7 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
 /* ---------- 啟動 ---------- */
 if(!SUPABASE_URL||!SUPABASE_KEY||!window.supabase){UI.view='setup';render()}
 else{
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:TESTN?{persistSession:true,detectSessionInUrl:false,storage:window.sessionStorage,storageKey:'ps-test-'+TESTN}:{persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
   let booted=false;
   sb.auth.onAuthStateChange((ev,session)=>{const u=session?session.user:null;
     if(!booted||(u&&u.id)!==(user&&user.id)){booted=true;user=u;setTimeout(afterAuth,0)}});
