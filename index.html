@@ -459,9 +459,9 @@ function vToday(){
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
   <div class="row2"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
   ${rs.length?`<h2>開著的房間</h2>${rs.map(x=>{const n=playing(x).length,mine=inRoom(x,mid);
-    return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}
+    return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${isLocked(x)?' <span class="pill">🔒 已鎖住</span>':''}
       <div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
-      ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">加入</button>`}</div></div>`}).join('')}`:''}
+      ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:(isLocked(x)&&!(x.present||[]).includes(mid)?`<button class="btn sm" disabled>已鎖住</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">加入</button>`)}</div></div>`}).join('')}`:''}
   <h2>近期戰績</h2><div class="card">${recent.length?recent.map(gameLine).join(''):'<p class="empty">還沒有正式戰績，開一場吧！</p>'}</div>`;
 }
 
@@ -491,6 +491,10 @@ function vCreate(){
 }
 
 /* ---------- 03 等待／04 比賽中 ---------- */
+const isLocked=s=>!!(s&&s.cfg&&s.cfg.lock);
+function lockRow(s,host){const L=isLocked(s);
+  if(host)return `<div class="card split"><div><b>${L?'🔒 房間已鎖住':'🔓 開放加入'}</b><small class="mute" style="display:block">${L?'其他人無法加入；已在房裡的人不受影響。':'球團成員都可以用代碼或列表加入。'}</small></div><button class="btn sm ${L?'pri':''}" data-act="rLock" data-v="${L?0:1}">${L?'開放加入':'鎖住房間'}</button></div>`;
+  return L?`<p class="mute" style="margin:6px 0 0">🔒 房主已鎖住這個房間</p>`:''}
 function vRoom(){
   const s=room();
   if(UI.game){const g=games.find(x=>x.id===UI.game);if(g)return vGame(g,sessById(g.session_id));UI.game=null}
@@ -503,12 +507,13 @@ function vWait(s){
   return `<button class="btn sm ghost" data-tab="today">‹ 大廳</button>
   <h1 style="margin-top:10px">房間等待中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}</p>
   <div class="card split"><div><small class="mute">房間代碼</small><div class="code">${esc(s.code||'——')}</div></div><button class="btn sm" data-act="copyCode" data-id="${s.id}">複製代碼</button></div>
+  ${lockRow(s,host)}
   <div class="card"><div class="split"><h3 style="margin:0">球員（${ids.length}）</h3><span class="pill ${nr===ids.length&&ids.length?'ok':''}">${nr} / ${ids.length} 人已準備</span></div>
     ${ids.map(id=>{const r=rd.includes(id),off=(s.away||[]).includes(id);return `<div class="item" style="${off?'opacity:.5':''}">${headImg(id)}<div class="grow"><b>${nm(id)}${hostP&&hostP.id===id?' 👑':''}${id===mid?'（我）':''}</b><small>${off?'先離開':r?'已準備':'未準備'}</small></div>
       <span class="pill ${r?'ok':''}">${r?'已準備':'未準備'}</span>${host&&id!==mid?`<button class="kick" data-act="kick" data-id="${id}" aria-label="請 ${nm(id)} 離開">×</button>`:''}</div>`}).join('')||'<p class="empty">還沒有人進來</p>'}
     ${ids.length<k?`<p class="mute" style="margin:8px 0 0">還差 ${k-ids.length} 人才能開始${k===4?'雙打':'單打'}。</p>`:''}</div>
   <div class="row2">${me?(inR?`<button class="btn" data-act="ready" data-v="${rd.includes(mid)?0:1}">${rd.includes(mid)?'取消準備':'我準備好了'}</button><button class="btn ghost" data-act="rleave" data-id="${s.id}">離開房間</button>`
-    :`<button class="btn pri" data-act="rjoin" data-id="${s.id}">加入房間</button><span></span>`):''}</div>
+    :(isLocked(s)&&!(s.present||[]).includes(mid)?`<button class="btn" disabled>🔒 房間已鎖住</button><span></span>`:`<button class="btn pri" data-act="rjoin" data-id="${s.id}">加入房間</button><span></span>`)):''}</div>
   <button class="btn wide" data-act="copyRoom" data-id="${s.id}" style="margin-top:10px">邀請球友（複製連結）</button>
   ${host?`<details class="more"><summary>房主設定</summary><label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
     <button class="btn warn wide" data-act="rcloseAsk" style="margin-top:14px">解散房間</button></details>
@@ -521,6 +526,7 @@ function vPlay(s){
   const startBtn=g=>host?`<button class="btn sm ${g===rec?'pri':''}" data-act="gStart" data-id="${g.id}" ${!fc||[...g.a,...g.b].some(id=>busy.has(id))?'disabled':''}>開始這場</button>`:'';
   return `<button class="btn sm ghost" data-tab="today">‹ 大廳</button>
   <h1 style="margin-top:10px">房間比賽中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
+  ${host||isLocked(s)?lockRow(s,host):''}
   ${pendingCard()}
   <h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
   ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
@@ -532,7 +538,7 @@ function vPlay(s){
     :`<p class="empty">預排的場次打完了</p>${host?'<button class="btn wide" data-act="addRound">再排一輪</button>':''}`}</div>
   <h2>候場</h2><div class="card">${waitIds.length?`<div class="row">${waitIds.map(id=>`<span class="pill">${nm(id)}</span>`).join('')}</div>`:'<p class="empty" style="padding:6px">目前無候場球員</p>'}</div>
   ${done.length?`<h2>已打完（${done.length}）</h2><div class="card">${done.map(g=>`<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openGame" data-id="${g.id}"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)} vs ${teamNames(g.b,mid)}</b><small>${g.status==='pending'?'待確認':'已確認'}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span></button>`).join('')}</div>`:''}
-  <div class="row2" style="margin-top:14px">${me?(inR?`<button class="btn ghost" data-act="rleave" data-id="${s.id}">我先離開</button>`:`<button class="btn" data-act="rjoin" data-id="${s.id}">${(s.away||[]).includes(mid)?'回到場上':'加入房間'}</button>`):''}<button class="btn" data-act="copyRoom" data-id="${s.id}">邀請球友</button></div>
+  <div class="row2" style="margin-top:14px">${me?(inR?`<button class="btn ghost" data-act="rleave" data-id="${s.id}">我先離開</button>`:(isLocked(s)&&!(s.present||[]).includes(mid)?`<button class="btn" disabled>🔒 房間已鎖住</button>`:`<button class="btn" data-act="rjoin" data-id="${s.id}">${(s.away||[]).includes(mid)?'回到場上':'加入房間'}</button>`)):''}<button class="btn" data-act="copyRoom" data-id="${s.id}">邀請球友</button></div>
   ${host?`<details class="more"><summary>房主設定</summary>
     <label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
     <label class="lb">房內球員</label>${(s.present||[]).filter(P).map(id=>{const off=(s.away||[]).includes(id);return `<div class="item">${headImg(id,'s')}<div class="grow"><b>${nm(id)}</b><small>${off?'先離開':'在場'}</small></div>${id!==mid?`<button class="btn sm" data-act="kick" data-id="${id}">${off?'回到場上':'先離開'}</button>`:''}</div>`}).join('')}
@@ -728,7 +734,7 @@ document.addEventListener('click',async e=>{
     /* 加入房間 */
     case 'joinAsk':modal(`<h3>加入房間</h3><label class="lb" for="rcode" style="margin-top:0">房間代碼</label><input type="text" id="rcode" maxlength="6" placeholder="例如 PS4821" autocapitalize="characters" style="text-transform:uppercase">
       <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="codeJoin">加入</button><button class="btn" data-act="close">取消</button></div>
-      ${openRooms().length?`<p class="mute" style="margin:14px 0 6px">或直接選開著的房間：</p>${openRooms().map(x=>`<button class="btn wide" style="margin-bottom:8px" data-act="rjoin" data-id="${x.id}">${esc(roomName(x))}<small>${SP[x.sport]}・${playing(x).length} 人・${x.status==='live'?'比賽中':'等待中'}</small></button>`).join('')}`:''}`);return;
+      ${openRooms().length?`<p class="mute" style="margin:14px 0 6px">或直接選開著的房間：</p>${openRooms().map(x=>`<button class="btn wide" style="margin-bottom:8px" data-act="rjoin" data-id="${x.id}" ${isLocked(x)&&!(x.present||[]).includes((myP()||{}).id)?'disabled':''}>${isLocked(x)?'🔒 ':''}${esc(roomName(x))}<small>${SP[x.sport]}・${playing(x).length} 人・${x.status==='live'?'比賽中':'等待中'}</small></button>`).join('')}`:''}`);return;
     case 'codeJoin':{const c=($('#rcode').value||'').trim().toUpperCase();if(!c){toast('請輸入房間代碼');return}t.disabled=true;
       const sid=await rpc('room_by_code',{p_code:c});closeModal();await rpc('room_join',{sid});setRoom(sid);go('games');await loadClub();toast('已進入房間');return}
     case 'enter':setRoom(id);UI.game=null;go('games');break;
@@ -738,6 +744,7 @@ document.addEventListener('click',async e=>{
     case 'ready':{const r=room();if(!r)return;await rpc('room_ready',{sid:r.id,val:v==='1'});await loadClub();return}
     case 'copyCode':{const x=sessById(id);copyText(x.code||'');return}
     case 'copyRoom':{const x=sessById(id);copyText(`🏓 ${roomName(x)}（${SP[x.sport]}）${x.code?'房間代碼 '+x.code:''}\n快進房：${location.origin+location.pathname}?join=${club.join_code}&room=${x.id}`);return}
+    case 'rLock':{const r=room();if(!r||!isHost(r))return;await saveSess(r,{cfg:Object.assign({},r.cfg,{lock:v==='1'})});toast(v==='1'?'已鎖住房間，其他人不能加入':'已開放加入');return}
     case 'rCourts':{const r=room();if(!r)return;await saveSess(r,{cfg:Object.assign({},r.cfg,{courts:+v})});return}
     case 'kick':{const r=room();if(!r||!isHost(r))return;
       if(r.status==='lobby')await saveSess(r,{present:r.present.filter(x=>x!==id),ready:(r.ready||[]).filter(x=>x!==id)});
