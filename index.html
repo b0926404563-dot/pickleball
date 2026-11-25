@@ -559,7 +559,7 @@ const GROWS={};   // sport → rows {id,a:[uid],b:[uid],sa,sb,ended_at,created_a
 async function loadGRows(){for(const sp of ['pickleball','badminton']){
   const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});
   if(error){GROWS[sp]=null;continue}
-  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed'}))}
+  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',sport:sp}))}
   for(const k in EXC)delete EXC[k]}
 const uidOf=pid=>{const p=players.find(x=>x.id===pid);return p&&p.user_id};
 function ability(sport,onlySid,lam=3,o={}){
@@ -808,12 +808,15 @@ function vRank(){
 function vRecords(){
   if(UI.detail){const s=sessById(UI.detail);if(s)return vDetail(s);UI.detail=null}
   const flt=UI.recSport||'all',mine=myGames(flt==='all'?null:flt),me=myP(),w=mine.filter(g=>{const sd=sideOf(g,me.id);return sd==='a'?g.sa>g.sb:g.sb>g.sa}).length;
+  const GA=(GROWS.pickleball&&GROWS.badminton)?(flt==='all'?['pickleball','badminton']:[flt]).flatMap(sp=>myGlobal(sp)||[]).sort((x,y)=>gTime(y.g)-gTime(x.g)):null;
+  if(GA)needPeople(GA.slice(0,50).flatMap(x=>[...x.g.a,...x.g.b]));
+  const gN=GA?GA.length:mine.length,gW=GA?GA.filter(x=>(x.g.a.includes(user.id))===(x.g.sa>x.g.sb)).length:w;
   const logs=sessions.filter(x=>x.status!=='lobby'&&(x.status==='live'||played(x)));
-  return `<h1>歷史紀錄</h1><p class="sub">我的正式戰績</p>
-  <div class="row2"><div class="card"><small class="mute">出賽</small><div class="num" style="font-size:28px;font-weight:800">${mine.length} <small style="font-size:14px">場</small></div></div>
-    <div class="card"><small class="mute">戰績</small><div class="num" style="font-size:28px;font-weight:800;color:var(--y)">${w} <small style="font-size:14px">勝</small> ${mine.length-w} <small style="font-size:14px">敗</small></div></div></div>
+  return `<h1>歷史紀錄</h1><p class="sub">我的正式戰績・所有球團合計</p>
+  <div class="row2"><div class="card"><small class="mute">出賽</small><div class="num" style="font-size:28px;font-weight:800">${gN} <small style="font-size:14px">場</small></div></div>
+    <div class="card"><small class="mute">戰績</small><div class="num" style="font-size:28px;font-weight:800;color:var(--y)">${gW} <small style="font-size:14px">勝</small> ${gN-gW} <small style="font-size:14px">敗</small></div></div></div>
   ${seg(flt,'recF',[['all','全部'],['pickleball','匹克球'],['badminton','羽球']])}
-  <h2>最近比賽</h2><div class="card">${mine.length?mine.slice(0,50).map(gameLine).join(''):'<p class="empty">還沒有確認過的比賽</p>'}</div>
+  <h2>最近比賽</h2>${GA?(GA.length?`<div class="mr-list">${GA.slice(0,50).map(x=>mrRowG(x,user.id)).join('')}</div>`:'<div class="card"><p class="empty">還沒有確認過的比賽</p></div>'):`<div class="card">${mine.length?mine.slice(0,50).map(gameLine).join(''):'<p class="empty">還沒有確認過的比賽</p>'}</div>`}
   <h2>球團活動紀錄</h2><div class="card">${logs.length?logs.map(s=>{const gl=gamesOf(s.id).filter(g=>g.status!=='open');
     return `<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="detail" data-id="${s.id}"><div class="grow"><b>${esc(roomName(s))} ${sportPill(s)}${s.status==='live'?' <span class="pill live">進行中</span>':''}</b><small>${D(s.started_at)} ${HM(s.started_at)}${s.place?'・'+esc(s.place):''}・${(s.present||[]).length} 人・${gl.length} 場${(()=>{const m=(myP()||{}).id,n=gl.filter(g=>m&&[...g.a,...g.b].includes(m)).length;return n?`・<b style="color:var(--y)">我打了 ${n} 場</b>`:'・我沒參加'})()}</small></div><span class="mute">›</span></button>`}).join(''):'<p class="empty">還沒有活動紀錄</p>'}</div>`;
 }
@@ -864,8 +867,38 @@ function vMembers(){
 /* ---------- 10 角色 ---------- */
 
 /* ---------- 我的（個人數據，仿 DUPR Performance） ---------- */
+
+/* ---------- 個人戰績跨球團合計（用帳號 id） ---------- */
+const PPL={};let pplBusy=false;
+async function needPeople(uids){const miss=[...new Set(uids)].filter(u=>u&&!PPL[u]&&!avatarsKnown(u));if(!miss.length||pplBusy)return;pplBusy=true;
+  try{const {data}=await sb.rpc('global_people',{p_ids:miss});(data||[]).forEach(x=>{PPL[x.id]=x;if(x.avatar&&Object.keys(x.avatar).length&&!avatars[x.id])avatars[x.id]=x.avatar});miss.forEach(u=>{if(!PPL[u])PPL[u]={nickname:'球友'}})}finally{pplBusy=false}render()}
+const avatarsKnown=u=>players.some(p=>p.user_id===u);
+const uName=u=>{const p=players.find(x=>x.user_id===u);return p?esc(p.name):PPL[u]?esc(PPL[u].nickname||'球友'):'…'};
+const MYG={};
+function myGlobal(sp){const G=GROWS[sp],uid=user&&user.id;if(!G||!uid)return null;
+  const ex=exclSet(sp),key=EXC[sp].key+'|'+uid;if(MYG[sp]&&MYG[sp].key===key)return MYG[sp].list;
+  const rows=G.slice().sort(gOrder),toR=g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:gTime(g)}),kept=[],list=[];
+  rows.forEach(g=>{const all=[...g.a,...g.b];if(all.includes(uid)){const t=gTime(g),R0=fitRows(kept.map(toR),t),R1=ex.has(g.id)?R0:fitRows([...kept,g].map(toR),t);
+      const be={};all.forEach(u=>be[u]=R0[u]?R0[u].r:3);list.push({g,be,after:R1[uid]?R1[uid].r:3,skip:ex.has(g.id)})}
+    if(!ex.has(g.id))kept.push(g)});
+  list.reverse();MYG[sp]={key,list};return list}
+function mrRowG(x,uid){const g=x.g,inA=g.a.includes(uid),aw=g.sa>g.sb,won=inA?aw:!aw,d=x.after-x.be[uid],local=games.some(o=>o.id===g.id);
+  const team=(lab,ids,sc,w)=>`<div class="mr-team ${w?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(u=>`<span class="mr-p ${u===uid?'is-self':''}">${u===uid?'我':uName(u)}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${w?'<span class="mr-win">勝</span>':''}<span>${sc}</span></span></div>`;
+  return `<${local?'button':'div'} class="mr-row is-mine ${won?'is-win':'is-loss'}" ${local?`data-act="openGame" data-id="${g.id}"`:''}>
+    <div class="mr-meta"><span class="mr-id">${D(g.ended_at)}・${esc(g.club||'')}・${g.a.length===1?'單打':'雙打'}</span><span class="mr-tags">${x.skip?'<span class="mr-dl">不計分</span>':`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`}<span class="mr-res">${won?'勝':'敗'}</span></span></div>
+    ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,!aw)}</${local?'button':'div'}>`}
+
 function myStats(sp,mid){
   const AB=ability(sp),me=AB[mid],ex=exclSet(sp);
+  const MG=myGlobal(sp);
+  if(MG){const uid=user.id;let w=0,pf=0,pa=0,pS=0,pN=0,oS=0,oN=0,hi=me?me.r:null;const lv={up:[0,0],eq:[0,0],dn:[0,0]};
+    MG.forEach(x=>{const g=x.g,inA=g.a.includes(uid),mine=inA?g.a:g.b,opp=inA?g.b:g.a,ms=inA?g.sa:g.sb,os=inA?g.sb:g.sa,won=ms>os,b=u=>x.be[u];
+      if(won)w++;pf+=ms;pa+=os;mine.filter(u=>u!==uid).forEach(u=>{pS+=b(u);pN++});opp.forEach(u=>{oS+=b(u);oN++});hi=Math.max(hi==null?0:hi,x.after);
+      const oAvg=opp.reduce((t,u)=>t+b(u),0)/opp.length,k=oAvg>b(uid)+0.25?'up':oAvg<b(uid)-0.25?'dn':'eq';lv[k][won?0:1]++});
+    needPeople(MG.slice(0,5).flatMap(x=>[...x.g.a,...x.g.b]));
+    const rated=Object.keys(AB).filter(P),below=me?rated.filter(id=>AB[id].r<me.r).length:0;
+    return {AB,me,gl:MG,global:true,w,l:MG.length-w,pct:pf+pa?100*pf/(pf+pa):null,avgP:pN?pS/pN:null,avgO:oN?oS/oN:null,hi,lv,clubs:new Set(MG.map(x=>x.g.club)).size,
+      beat:me&&rated.length>1?Math.round(100*below/(rated.length-1)):null,rank:me?rated.filter(id=>AB[id].r>me.r).length+1:null,n:rated.length,rel:relOf(mid,sp),ex}}
   const gl=games.filter(g=>g.status==='confirmed'&&(sessById(g.session_id)||{}).sport===sp&&[...g.a,...g.b].includes(mid)).sort((x,y)=>gTime(y)-gTime(x));
   let w=0,pf=0,pa=0,pS=0,pN=0,oS=0,oN=0,hi=me?me.r:null;const lv={up:[0,0],eq:[0,0],dn:[0,0]};
   gl.forEach(g=>{const inA=g.a.includes(mid),mine=inA?g.a:g.b,opp=inA?g.b:g.a,ms=inA?g.sa:g.sb,os=inA?g.sb:g.sa,won=ms>os,sn=SN[g.id]||{},b=p=>sn[p]?sn[p].b:3;
@@ -879,7 +912,7 @@ function vMe(){
   const me=myP(),mid=me&&me.id,sp=UI.meSport||UI.form.sport||'pickleball',S=myStats(sp,mid),f3=x=>x==null?'—':x.toFixed(3);
   const tile=(v,l,c='')=>`<div class="pf-tile ${c}"><b>${v}</b><span>${l}</span></div>`;
   const lvRow=(k,lab,desc)=>{const [a,b]=S.lv[k],n=a+b;return `<div class="pf-lv"><div><b>${lab}</b><small>${desc}</small></div><div class="pf-bar"><i style="width:${n?100*a/n:0}%"></i></div><span>${a} 勝 ${b} 敗</span></div>`};
-  return `<h1>我的</h1><p class="sub">${esc(club.name)}・個人數據</p>
+  return `<h1>我的</h1><p class="sub">個人數據・${S.global&&S.clubs>1?`合計 ${S.clubs} 個球團`:'所有球團合計'}</p>
   <div class="me-card"><div class="me-fig">${figure(avOf(user.id),sp)}</div>
     <div class="me-info"><b class="me-name">${esc(me?me.name:'')}<span class="lv">Lv.${lvOf(mid)}</span></b>
       <small>${SP[sp]}實力分數</small><div class="me-r">${S.me?S.me.r.toFixed(3):'未定級'}</div>
@@ -891,7 +924,7 @@ function vMe(){
   ${S.gl.length?`<div class="pf-grid">${tile(`${S.w}-${S.l}`,'戰績（勝-敗）')}${tile(S.pct==null?'—':S.pct.toFixed(1)+'%','平均得分率')}${tile(f3(S.avgP),'平均搭檔分數')}${tile(f3(S.avgO),'平均對手分數')}</div>
     ${S.beat!=null?`<div class="pf-rank" data-act="tabRank"><div><b>贏過 ${S.beat}%</b><span>的球團球員（第 ${S.rank} 名 / ${S.n} 人）</span></div><span class="pf-go">看排名 ›</span></div>`:''}
     <h2>對上不同程度</h2><div class="card">${lvRow('up','比我強','對手平均高 0.25 以上')}${lvRow('eq','差不多','相差 0.25 以內')}${lvRow('dn','比我弱','對手平均低 0.25 以上')}</div>
-    <h2>最近比賽</h2><div class="mr-list">${S.gl.slice(0,5).map(g=>mrRow(g,sessById(g.session_id),mid)).join('')}</div>
+    <h2>最近比賽</h2><div class="mr-list">${S.global?S.gl.slice(0,5).map(x=>mrRowG(x,user.id)).join(''):S.gl.slice(0,5).map(g=>mrRow(g,sessById(g.session_id),mid)).join('')}</div>
     ${S.gl.length>5?`<button class="btn wide ghost" data-act="tabRecords" style="margin-top:10px">看全部紀錄</button>`:''}`
   :`<div class="card"><p class="empty">還沒有${SP[sp]}的正式比賽，打完第一場就會出現數據。</p></div>`}
   <p class="mute" style="font-size:13px;margin-top:14px">平均搭檔／對手分數是每場比賽「賽前」的分數平均；得分率 = 你們隊得分 ÷ 雙方總分。</p>`}
