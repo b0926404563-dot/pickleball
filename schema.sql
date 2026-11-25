@@ -18,6 +18,7 @@ create table profiles(
   nickname text unique check (char_length(trim(nickname)) between 1 and 20),
   dupr  numeric(4,3) check (dupr  between 1 and 8),   -- 匹克球起始分數
   bdupr numeric(4,3) check (bdupr between 1 and 8),   -- 羽球起始分數
+  avatar jsonb not null default '{}'::jsonb check (octet_length(avatar::text) < 1000),  -- 虛擬人偶外觀
   created_at timestamptz not null default now()
 );
 

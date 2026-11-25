@@ -112,6 +112,41 @@ tr.me td{background:var(--soft)}
 .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:10px}
 .slot{border:2px solid var(--line);border-radius:14px;padding:12px 6px 10px;text-align:center;background:var(--bg);position:relative;min-height:116px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .slot .av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:19px;color:#fff;background:var(--court);margin-bottom:4px}
+.slot .avs{width:62px;height:78px;margin-bottom:2px}
+.slot .avs svg,.mini svg,.stage .me svg,.avprev svg{width:100%;height:100%;display:block;overflow:visible}
+.stage{position:relative;border-radius:22px;overflow:hidden;min-height:330px;margin-bottom:12px;background:linear-gradient(180deg,light-dark(#79c2ff,#16245a) 0%,light-dark(#bfe4ff,#2c3f86) 58%,light-dark(#eaf6ff,#3b4f96) 100%);box-shadow:0 6px 18px rgba(10,30,70,.18)}
+.stage .deco{position:absolute;inset:0;width:100%;height:100%}
+.stage .me{position:absolute;left:50%;bottom:26px;width:180px;height:226px;transform:translateX(-50%);animation:bob 2.8s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
+.stage .plate{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.9);color:#0f1a2e;border-radius:14px;padding:6px 12px 6px 6px;display:flex;gap:8px;align-items:center;max-width:62%}
+.stage .plate .mini{width:38px;height:38px;border-radius:50%;background:#dff0ff;overflow:hidden;flex:none}
+.stage .plate b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage .lv{display:inline-block;background:#ffb800;color:#3a2600;font-weight:800;font-size:11px;border-radius:6px;padding:0 6px}
+.stage .stats{position:absolute;right:12px;top:12px;display:grid;gap:6px}
+.stage .chip{background:rgba(255,255,255,.9);color:#0f1a2e;border-radius:12px;padding:4px 10px;font-size:12px;font-weight:700;text-align:right}
+.stage .chip b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.stage .chip.bd b{color:#1c7a4f}.stage .chip.pb b{color:#1d4f9e}
+.stage .dress{position:absolute;left:12px;bottom:14px;min-height:44px;border:0;border-radius:14px;background:rgba(255,255,255,.92);color:#0f1a2e;font-weight:800;padding:0 14px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.stage .sp{position:absolute;right:12px;bottom:14px;display:flex;background:rgba(255,255,255,.9);border-radius:12px;padding:3px;gap:2px}
+.stage .sp button{min-height:38px;border:0;border-radius:10px;background:none;font-weight:700;padding:0 10px;color:#0f1a2e;cursor:pointer}
+.stage .sp button.on{background:#1d4f9e;color:#fff}
+.qrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.qbtn{min-height:72px;border:0;border-radius:18px;font-weight:900;font-size:20px;cursor:pointer;color:#2b1d00;background:linear-gradient(180deg,#ffe35a,#ffb800);box-shadow:0 4px 0 #c98a00;line-height:1.15}
+.qbtn small{display:block;font-size:12px;font-weight:600;opacity:.8}
+.qbtn.blue{color:#fff;background:linear-gradient(180deg,#3d7ae0,#1d4f9e);box-shadow:0 4px 0 #123a78}
+.qbtn:active{transform:translateY(3px);box-shadow:none}
+.qbtn:disabled{opacity:.5}
+.rm .heads{display:flex;margin-top:6px}
+.rm .heads .mini{width:30px;height:30px;border-radius:50%;background:#dff0ff;border:2px solid var(--card);overflow:hidden;margin-left:-6px}
+.rm .heads .mini:first-child{margin-left:0}
+.plr .mini{width:40px;height:40px;border-radius:50%;background:#dff0ff;overflow:hidden;flex:none}
+.avprev{width:150px;height:188px;margin:0 auto 6px;background:radial-gradient(circle at 50% 70%,#dff0ff,transparent 70%)}
+.avrow{margin-bottom:10px}.avrow label{display:block;font-weight:700;font-size:13px;color:var(--mute);margin-bottom:4px}
+.sw{display:flex;flex-wrap:wrap;gap:6px}
+.sw button{min-width:44px;min-height:44px;border-radius:12px;border:2px solid var(--line);background:var(--card);font-weight:700;cursor:pointer;color:var(--ink);padding:0 8px}
+.sw button.c{min-width:36px;width:36px;min-height:36px;border-radius:50%;padding:0}
+.sw button.on{border-color:var(--a);box-shadow:0 0 0 2px var(--a)}
+@media (prefers-reduced-motion:reduce){.stage .me{animation:none}}
 .slot.me{border-color:var(--ball);box-shadow:0 0 0 2px var(--ball) inset}
 .slot.host .av{background:#c08a00}
 .slot.off{opacity:.45}
@@ -153,7 +188,7 @@ const errMsg=e=>{const m=(e&&(e.message||e.error_description))||'發生錯誤，
 async function copyText(text){try{await navigator.clipboard.writeText(text);toast('已複製')}catch(e){modal(`<h3>請長按複製</h3><textarea readonly>${esc(text)}</textarea><div class="row" style="margin-top:12px"><button class="btn" data-act="close">關閉</button></div>`)}}
 
 /* ---------- 狀態 ---------- */
-let sb=null,user=null,profile=null,myClubs=[],club=null,role=null,members=[],players=[],sessions=[],games=[],chan=null,loadingClub=false;
+let avatars={},sb=null,user=null,profile=null,myClubs=[],club=null,role=null,members=[],players=[],sessions=[],games=[],chan=null,loadingClub=false;
 const UI={room:ls.get('pbc-room')||null,view:'boot',tab:ls.get('pbc-tab')||'today',rankView:'today',rankSport:'pickleball',detail:null,sel:null,edit:null,gen:false,
   form:Object.assign({sport:'pickleball',mode:'doubles',courts:1,target:11,place:''},(()=>{try{return JSON.parse(ls.get('pbc-form'))||{}}catch(e){return{}}})())};
 
@@ -275,6 +310,9 @@ async function loadClub(){
   try{
     const [pl,mb,ss,gm]=await Promise.all([fetchAll('players',club.id,'created_at',true),fetchAll('members',club.id,'joined_at',true),fetchAll('sessions',club.id,'started_at',false),fetchAll('games',club.id,'created_at',true)]);
     players=pl;members=mb;sessions=ss;games=gm;
+    const uids=[...new Set(members.map(m=>m.user_id))];
+    if(uids.length){const {data:pf}=await sb.from('profiles').select('id,avatar').in('id',uids);(pf||[]).forEach(x=>{if(x.avatar&&Object.keys(x.avatar).length)avatars[x.id]=x.avatar})}
+    if(profile&&profile.avatar&&Object.keys(profile.avatar).length)avatars[user.id]=profile.avatar;
     const m=members.find(x=>x.user_id===user.id);role=m?m.role:null;
     if(!m){toast('你已經不在這個俱樂部了');club=null;UI.view='clubs';await loadClubs()}
   }catch(e){toast(errMsg(e))}
@@ -319,6 +357,88 @@ async function afterAuth(){
   UI.view='clubs';render();
 }
 
+/* ---------- 虛擬人偶（原創 SVG 紙娃娃） ---------- */
+const AVP={
+  s:['#ffe0c7','#f6c9a0','#e0a878','#b97c50','#8a5634'],
+  hc:['#2b2018','#5a3a22','#a0642c','#e3b04b','#c0392b','#5b6cff','#e8e8e8'],
+  sh:['#1d4f9e','#c94e22','#1c7a4f','#d8ef2f','#7b3fb5','#ff6fa1','#222831','#ffffff'],
+  p:['#222831','#3b4a6b','#ffffff','#7a5a3a','#1d4f9e'],
+  hwc:['#c94e22','#1d4f9e','#d8ef2f','#ff6fa1','#ffffff','#222831'],
+  h:['短髮','刺蝟頭','妹妹頭','馬尾','包包頭','捲髮','長髮'],
+  hw:['無','頭帶','棒球帽','遮陽帽','墨鏡','貓耳'],
+  e:['微笑','大笑','瞇眼','認真','眨眼']};
+const avHash=str=>{let x=0;for(const c of String(str||''))x=(x*31+c.charCodeAt(0))>>>0;return x};
+function avDef(uid){const x=avHash(uid),pick=(k,i)=>(x>>>i)%AVP[k].length;
+  return {s:pick('s',1),h:pick('h',3),hc:pick('hc',5),sh:pick('sh',7),p:pick('p',9),hw:0,hwc:pick('hwc',11),e:pick('e',13),n:''}}
+const avOf=uid=>Object.assign(avDef(uid),(uid&&avatars[uid])||{});
+const avP=pid=>{const p=P(pid);return avOf(p&&p.user_id||pid)};
+function avSvg(a,o={}){
+  const sk=AVP.s[a.s]||AVP.s[0],hc=AVP.hc[a.hc]||AVP.hc[0],sh=AVP.sh[a.sh]||AVP.sh[0],pt=AVP.p[a.p]||AVP.p[0],hwc=AVP.hwc[a.hwc]||AVP.hwc[0];
+  const dark=c=>{const n=parseInt(c.slice(1),16);return ((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000<150};
+  const hs=(a.hw===2&&[1,5].includes(a.h))?0:a.h,head=o.head,sport=o.sport||'pickleball',ink='#2a1a12';
+  let back='',front='';
+  if(hs===0){back=`<path d="M24 44 Q22 13 50 13 Q78 13 76 44Z" fill="${hc}"/>`;front=`<path d="M25 41 Q27 15 50 14 Q73 15 75 41 Q67 30 58 33 Q52 26 44 32 Q34 28 25 41Z" fill="${hc}"/>`}
+  if(hs===1){front=`<path d="M24 42 L26 22 L33 27 L36 11 L44 22 L50 6 L56 21 L64 10 L67 26 L74 21 L76 42 Q63 30 50 32 Q37 30 24 42Z" fill="${hc}"/>`}
+  if(hs===2){back=`<path d="M22 46 Q21 13 50 13 Q79 13 78 46 L78 62 Q71 64 69 56 L31 56 Q29 64 22 62Z" fill="${hc}"/>`;front=`<path d="M25 40 Q26 15 50 15 Q74 15 75 40 L70 34 L62 35 L56 31 L48 35 L40 31 L32 35Z" fill="${hc}"/>`}
+  if(hs===3){back=`<path d="M24 44 Q22 13 50 13 Q78 13 76 44Z" fill="${hc}"/><path d="M70 22 Q92 24 86 52 Q84 60 78 62 Q84 44 72 32Z" fill="${hc}"/><circle cx="73" cy="25" r="3.5" fill="#ff6fa1"/>`;front=`<path d="M25 41 Q27 15 50 14 Q73 15 75 41 Q66 28 54 30 Q40 27 25 41Z" fill="${hc}"/>`}
+  if(hs===4){back=`<circle cx="50" cy="11" r="9" fill="${hc}"/><path d="M24 44 Q22 13 50 13 Q78 13 76 44Z" fill="${hc}"/>`;front=`<path d="M25 41 Q27 16 50 15 Q73 16 75 41 Q64 30 50 31 Q36 30 25 41Z" fill="${hc}"/>`}
+  if(hs===5){const pts=[[26,36],[29,25],[36,17],[45,13],[55,13],[64,17],[71,25],[74,36]];back=`<path d="M24 44 Q22 13 50 13 Q78 13 76 44Z" fill="${hc}"/>`;front=pts.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="7.5" fill="${hc}"/>`).join('')+`<circle cx="40" cy="27" r="6" fill="${hc}"/><circle cx="52" cy="25" r="6" fill="${hc}"/><circle cx="63" cy="28" r="5.5" fill="${hc}"/>`}
+  if(hs===6){back=`<path d="M22 44 Q20 12 50 12 Q80 12 78 44 L80 80 Q66 84 62 70 L38 70 Q34 84 20 80Z" fill="${hc}"/>`;front=`<path d="M25 42 Q26 15 50 14 Q74 15 75 42 Q70 26 56 27 Q44 33 31 30 Q27 34 25 42Z" fill="${hc}"/>`}
+  const eyeL=`<ellipse cx="41.5" cy="45" rx="2.8" ry="3.4" fill="${ink}"/><circle cx="42.4" cy="43.8" r="1" fill="#fff"/>`,eyeR=`<ellipse cx="58.5" cy="45" rx="2.8" ry="3.4" fill="${ink}"/><circle cx="59.4" cy="43.8" r="1" fill="#fff"/>`;
+  const smile=`<path d="M45 53.5 Q50 58.5 55 53.5" stroke="${ink}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+  const arc=x=>`<path d="M${x-3.5} 46 Q${x} 41.5 ${x+3.5} 46" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  let face=[eyeL+eyeR+smile,eyeL+eyeR+`<path d="M44 52.5 Q50 62 56 52.5Z" fill="#7a2626"/><path d="M47 57.5 Q50 60 53 57.5" fill="#ff8f8f"/>`,arc(41.5)+arc(58.5)+smile,
+    eyeL+eyeR+`<path d="M37 38.5 L46 41 M63 38.5 L54 41" stroke="${hc}" stroke-width="2.4" stroke-linecap="round"/><path d="M46 55 L54 55" stroke="${ink}" stroke-width="1.8" stroke-linecap="round"/>`,
+    eyeL+arc(58.5)+smile][a.e]||'';
+  if(a.hw===4)face=`<rect x="35" y="40" width="13" height="9" rx="3.5" fill="#1b1f2a"/><rect x="52" y="40" width="13" height="9" rx="3.5" fill="#1b1f2a"/><path d="M48 43 L52 43" stroke="#1b1f2a" stroke-width="2"/><path d="M37 42 L41 41" stroke="#fff" stroke-width="1.2" opacity=".7"/>`+smile;
+  const cheeks=`<circle cx="36" cy="52" r="3.6" fill="#ff8a8a" opacity=".4"/><circle cx="64" cy="52" r="3.6" fill="#ff8a8a" opacity=".4"/>`;
+  const dk=c=>{const n=parseInt(c.slice(1),16),f=v=>Math.max(0,Math.round(v*.75));return '#'+[n>>16,(n>>8)&255,n&255].map(v=>f(v).toString(16).padStart(2,'0')).join('')};
+  const hw=[ '',
+    `<rect x="24" y="27" width="52" height="6.5" rx="3.2" fill="${hwc}"/><rect x="24" y="29.5" width="52" height="1.5" fill="#fff" opacity=".6"/>`,
+    `<path d="M24.5 35 Q25 11 50 11 Q75 11 75.5 35Z" fill="${hwc}"/><path d="M48 34 Q76 29 89 37 Q77 40 48 38Z" fill="${dk(hwc)}"/><circle cx="50" cy="12" r="2.2" fill="${dk(hwc)}"/>`,
+    `<rect x="25" y="27" width="50" height="6" rx="3" fill="${hwc}"/><path d="M50 31 Q77 27 89 35 Q77 38 50 35Z" fill="${dk(hwc)}"/>`,
+    '',
+    `<path d="M28 27 L31 8 L44 19Z" fill="${hwc}"/><path d="M31.5 22 L32.5 13 L39 19Z" fill="#ffb3c6"/><path d="M72 27 L69 8 L56 19Z" fill="${hwc}"/><path d="M68.5 22 L67.5 13 L61 19Z" fill="#ffb3c6"/>`][a.hw]||'';
+  const num=String(a.n||'').slice(0,2),tc=dark(sh)?'#fff':'#1b1f2a';
+  const gear=sport==='badminton'
+    ?`<g transform="translate(82 66) rotate(22)"><rect x="-1.6" y="-4" width="3.2" height="13" rx="1.5" fill="#333"/><path d="M0 -4 L0 -21" stroke="#9aa3ad" stroke-width="1.6"/><ellipse cx="0" cy="-32" rx="9" ry="12" fill="rgba(255,255,255,.35)" stroke="#e23b3b" stroke-width="2.6"/><path d="M-4.5 -42 V-22 M0 -44 V-20 M4.5 -42 V-22 M-8 -37 H8 M-9 -32 H9 M-8 -27 H8" stroke="#fff" stroke-width=".7" opacity=".9"/></g>`
+    :`<g transform="translate(82 66) rotate(22)"><rect x="-2.2" y="-6" width="4.4" height="13" rx="2" fill="#333"/><rect x="-10" y="-31" width="20" height="26" rx="8" fill="#ff7a1a" stroke="#c4560a" stroke-width="1.6"/><path d="M-6 -27 Q0 -30 6 -27" stroke="#fff" stroke-width="1.4" fill="none" opacity=".7"/></g>`;
+  const ball=sport==='badminton'
+    ?`<g transform="translate(25 97)"><path d="M-3.5 -2 L-7 -13 L7 -13 L3.5 -2Z" fill="#fff" stroke="#8a97a6" stroke-width=".9"/><path d="M-5 -8 H5" stroke="#8a97a6" stroke-width=".7"/><circle cx="0" cy="0" r="3.4" fill="#f4e3c3" stroke="#b9925a" stroke-width=".8"/></g>`
+    :`<circle cx="24" cy="96" r="5.5" fill="#d8ef2f" stroke="#a9bd10" stroke-width=".8"/><circle cx="22.3" cy="94.5" r="1" fill="#a9bd10"/><circle cx="25.8" cy="97.5" r="1" fill="#a9bd10"/><circle cx="25.5" cy="94" r=".9" fill="#a9bd10"/>`;
+  const vb=head?'21 7 58 58':'0 0 100 128';
+  return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    ${head?'':'<ellipse cx="50" cy="123" rx="25" ry="4.2" fill="rgba(0,0,0,.18)"/>'}
+    ${back}
+    ${head?'':`<rect x="38.5" y="102" width="8" height="16" rx="3" fill="${sk}"/><rect x="53.5" y="102" width="8" height="16" rx="3" fill="${sk}"/>
+    <ellipse cx="41.5" cy="119.5" rx="7.5" ry="3.8" fill="#fff" stroke="#c9d1da"/><ellipse cx="59.5" cy="119.5" rx="7.5" ry="3.8" fill="#fff" stroke="#c9d1da"/>
+    <path d="M35 94 L65 94 L66.5 106 L52 106 L50 100 L48 106 L33.5 106Z" fill="${pt}" stroke="${dk(pt)}" stroke-width=".6"/>
+    <path d="M35 69 Q50 64 65 69 L67 96 Q50 99.5 33 96Z" fill="${sh}" stroke="${dk(sh)}" stroke-width=".6"/>
+    <path d="M44 67.5 L50 74 L56 67.5" stroke="${dark(sh)?'#fff':'#1d4f9e'}" stroke-width="2" fill="none" stroke-linejoin="round"/>
+    ${num?`<text x="50" y="90" text-anchor="middle" font-size="11" font-weight="900" font-family="system-ui,sans-serif" fill="${tc}">${esc(num)}</text>`:''}
+    <path d="M36 73 L27 91" stroke="${sh}" stroke-width="8.5" stroke-linecap="round"/><path d="M33 79 L27 91" stroke="${sk}" stroke-width="6.5" stroke-linecap="round"/>
+    <path d="M64 73 L80 67" stroke="${sh}" stroke-width="8.5" stroke-linecap="round"/><path d="M70 71 L80 67" stroke="${sk}" stroke-width="6.5" stroke-linecap="round"/>
+    ${ball}<circle cx="27" cy="92" r="4" fill="${sk}"/>`}
+    <circle cx="26.5" cy="46" r="4.5" fill="${sk}"/><circle cx="73.5" cy="46" r="4.5" fill="${sk}"/>
+    <circle cx="50" cy="42" r="24" fill="${sk}"/>
+    ${cheeks}${face}${front}${hw}
+    ${head?'':gear+`<circle cx="81" cy="66" r="4.2" fill="${sk}"/>`}
+  </svg>`;
+}
+const miniAv=(pid,cls='mini')=>`<span class="${cls}">${avSvg(avP(pid),{head:true})}</span>`;
+function avEditor(){
+  const a=UI.avDraft,sport=UI.form.sport;
+  const row=(k,label,opts)=>`<div class="avrow"><label>${label}</label><div class="sw">${opts}</div></div>`;
+  const colors=k=>AVP[k].map((c,i)=>`<button class="c ${a[k]===i?'on':''}" style="background:${c}" data-act="av" data-k="${k}" data-v="${i}" aria-label="顏色 ${i+1}" aria-pressed="${a[k]===i}"></button>`).join('');
+  const names=k=>AVP[k].map((n,i)=>`<button class="${a[k]===i?'on':''}" data-act="av" data-k="${k}" data-v="${i}" aria-pressed="${a[k]===i}">${n}</button>`).join('');
+  $('#modal').classList.add('show');$('#mbox').innerHTML=(`<h3>換裝</h3><div class="avprev">${avSvg(a,{sport})}</div>
+    ${row('h','髮型',names('h'))}${row('hc','髮色',colors('hc'))}${row('s','膚色',colors('s'))}${row('e','表情',names('e'))}
+    ${row('sh','球衣',colors('sh'))}${row('p','褲子',colors('p'))}${row('hw','配件',names('hw'))}${a.hw&&a.hw!==4?row('hwc','配件顏色',colors('hwc')):''}
+    <div class="avrow"><label for="avn">背號（可空白）</label><input type="text" id="avn" inputmode="numeric" maxlength="2" value="${esc(a.n||'')}" style="max-width:110px"></div>
+    <div class="row"><button class="btn pri" data-act="avSave">穿上</button><button class="btn" data-act="avRand">🎲 隨機</button><button class="btn" data-act="close">取消</button></div>`);
+  const m=$('#mbox');if(m&&UI.avScroll)m.scrollTop=UI.avScroll;
+}
+
 /* ---------- 畫面元件 ---------- */
 const courtSvg=`<svg viewBox="0 0 240 150" aria-hidden="true"><rect x="8" y="14" width="224" height="122" rx="10" fill="#163f82"/><rect x="14" y="20" width="212" height="110" rx="6" fill="#1d4f9e"/><rect x="88" y="20" width="64" height="110" fill="#2a66c0"/><path d="M120 20v110M14 75h74M152 75h74" stroke="#fff" stroke-width="3"/><rect x="14" y="20" width="212" height="110" rx="6" fill="none" stroke="#fff" stroke-width="4"/><path d="M118 12v126" stroke="#e8eef9" stroke-width="5"/><circle cx="178" cy="46" r="15" fill="#d8ef2f"/><circle cx="173" cy="41" r="2.6" fill="#a9bd10"/><circle cx="183" cy="49" r="2.6" fill="#a9bd10"/><circle cx="176" cy="53" r="2.6" fill="#a9bd10"/><ellipse cx="180" cy="66" rx="13" ry="3" fill="rgba(0,0,0,.25)"/></svg>`;
 const gIcon=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
@@ -346,20 +466,43 @@ function vClubs(){return `<div class="card"><div class="hrow"><h2>我的俱樂�
   <div class="card"><h2>開一個新俱樂部</h2><div class="row" style="flex-wrap:nowrap"><input type="text" id="cname" maxlength="40" placeholder="例如：一皮闖天下"><button class="btn pri" data-act="create">建立</button></div><p class="mute" style="margin-bottom:0">你會是團長，可以指定幹部、管理名單和紀錄。</p></div>
   <div class="row"><button class="btn" data-act="editMe">修改暱稱與起始分數</button><button class="btn warn" data-act="logout">登出</button></div>`}
 
+function stageHtml(){
+  const me=myP(),f=UI.form,mid=me&&me.id;
+  const A={pickleball:ability('pickleball'),badminton:ability('badminton')};
+  const g=games.filter(x=>x.status==='confirmed'&&[...x.a,...x.b].includes(mid)).length,lv=1+Math.floor(g/5);
+  const deco=`<svg class="deco" viewBox="0 0 400 330" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <g fill="#fff" opacity=".75"><ellipse cx="70" cy="70" rx="38" ry="13"/><ellipse cx="96" cy="62" rx="24" ry="13"/><ellipse cx="315" cy="105" rx="42" ry="12"/><ellipse cx="292" cy="98" rx="22" ry="12"/></g>
+    <circle cx="345" cy="52" r="22" style="fill:light-dark(#fff6b0,#f3f0d6)" opacity=".9"/>
+    <path d="M-20 330 L70 220 L330 220 L420 330Z" fill="#1d4f9e"/><path d="M60 330 L120 220 L280 220 L340 330Z" fill="#2a66c0"/>
+    <path d="M70 220 L330 220 M-20 330 L70 220 M420 330 L330 220 M200 220 L200 330 M28 268 L372 268" stroke="#fff" stroke-width="3" fill="none"/>
+    <rect x="-20" y="262" width="440" height="7" fill="#e8eef9" opacity=".9"/>
+  </svg>`;
+  return `<div class="stage">${deco}
+    <div class="plate">${miniAv(mid)}<div style="min-width:0"><b>${esc(me?me.name:profile.nickname)}</b><span class="lv">Lv.${lv}</span> <span style="font-size:12px;color:#5a6780">${g} 場</span></div></div>
+    <div class="stats"><div class="chip pb">匹克球<b>${A.pickleball[mid]?A.pickleball[mid].r.toFixed(3):'3.000'}</b></div><div class="chip bd">羽球<b>${A.badminton[mid]?A.badminton[mid].r.toFixed(3):'3.000'}</b></div></div>
+    <div class="me">${avSvg(avOf(user.id),{sport:f.sport})}</div>
+    <button class="dress" data-act="avEdit">👕 換裝</button>
+    <div class="sp">${[['pickleball','匹克球'],['badminton','羽球']].map(([k,l])=>`<button class="${f.sport===k?'on':''}" data-act="fSport" data-v="${k}">${l}</button>`).join('')}</div>
+  </div>`;
+}
 function vToday(){
   const rs=openRooms(),me=myP(),f=UI.form,cur=room();
+  const waiting=rs.filter(x=>x.status==='lobby'&&x.sport===f.sport&&!(me&&inRoom(x,me.id))).sort((x,y)=>playing(y).length-playing(x).length);
   const recent=[...new Set(sessions.map(x=>x.place).filter(Boolean))].slice(0,6);
   const cfgTxt=x=>`${per(x)===4?'雙打':'單打'} · ${(x.cfg&&x.cfg.courts)||1} 面 · ${x.cfg&&x.cfg.target?'打到 '+x.cfg.target:'不限分數'}${x.place?' · '+esc(x.place):''}`;
   const list=rs.length?`<div class="rooms">${rs.map(x=>{const mine=me&&inRoom(x,me.id),n=playing(x).length;
     return `<div class="rm ${mine?'mine':''}"><div><b>${esc(roomName(x))}</b>${sportTag(x)}${x.status==='live'?'<span class="live">比賽中</span>':'<span class="wait">等待中</span>'}
-      <br><span class="mute">👥 ${n} 人 · ${cfgTxt(x)}</span></div>
+      <br><span class="mute">👥 ${n} 人 · ${cfgTxt(x)}</span><div class="heads">${playing(x).slice(0,8).map(id=>miniAv(id)).join('')}</div></div>
       <div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${mine?`<button class="btn pri sm" data-act="enter" data-id="${x.id}">回到房間</button>`
         :`<button class="btn sm" data-act="enter" data-id="${x.id}">看看</button>${me?`<button class="btn go sm" data-act="rjoin" data-id="${x.id}">加入</button>`:''}`}</div></div>`}).join('')}</div>`
     :`<p class="mute" style="margin:0">現在沒有開著的房間。開一個，把大家拉進來！</p>`;
-  return `${pendingCard()}<div class="card"><div class="hrow"><h2>🏁 對戰大廳</h2><span class="mute">${rs.length} 間房</span></div>${list}</div>
-  ${me?`<div class="card"><h2>開新房間</h2>
+  return `${pendingCard()}${me?stageHtml():''}
+  ${me?`<div class="qrow">${cur?`<button class="qbtn" data-act="enter" data-id="${cur.id}">回到房間<small>${esc(roomName(cur))}</small></button>`
+     :`<button class="qbtn" data-act="quick" ${waiting.length?'':'disabled'}>快速加入<small>${waiting.length?esc(roomName(waiting[0]))+' · '+playing(waiting[0]).length+' 人':'沒有等待中的'+SP[f.sport]+'房'}</small></button>`}
+     <button class="qbtn blue" data-act="newRoom">${UI.create?'收起':'開房間'}<small>${SP[f.sport]} · 你當房主</small></button></div>`:''}
+  ${me&&UI.create?`<div class="card" id="createCard"><h2>開新房間</h2>
     <div class="field"><label for="rname">房間名稱</label><input type="text" id="rname" maxlength="24" placeholder="${esc(me.name)} 的房間"></div>
-    <div class="field"><label>球種</label>${seg(f.sport,'fSport',[['pickleball','匹克球'],['badminton','羽球']])}</div>
+    <p class="mute" style="margin-top:0">球種：<b>${SP[f.sport]}</b>（在上方舞台切換）</p>
     <div class="field"><label>型式</label>${seg(f.mode,'fMode',[['doubles','雙打（輪換搭檔）'],['singles','單打']])}</div>
     <div class="field"><label>場地數</label>${seg(f.courts,'fCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}</div>
     <div class="field"><label>打到幾分</label>${seg([11,15,21,0].includes(+f.target)?f.target:'x','fTarget',[[11,'11'],[15,'15'],[21,'21'],[0,'不限']])}
@@ -367,8 +510,9 @@ function vToday(){
     <div class="field"><label for="place">在哪裡打</label><input type="text" id="place" maxlength="40" value="${esc(f.place)}" placeholder="例如：永康運動中心">
       ${recent.length?`<div class="row" style="margin-top:8px">${recent.map(x=>`<button class="pchip" style="min-height:38px;font-size:14px" data-act="placePick" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`:''}</div>
     <button class="btn big go" data-act="createRoom">${cur?'開新房間（會離開目前的房間）':'開房間'}</button>
-    <p class="mute" style="margin-bottom:0">你是房主：等大家進房後按「開始比賽」，系統自動排場；比賽中有人晚到，加入房間就會排進下一輪。</p></div>`
-  :`<div class="card"><p class="mute" style="margin:0">你在這個俱樂部還沒有球員資料，請重新用邀請連結加入。</p></div>`}`;
+    <p class="mute" style="margin-bottom:0">你是房主：等大家進房後按「開始比賽」，系統自動排場；比賽中有人晚到，加入房間就會排進下一輪。</p></div>`:''}
+  ${me?'':`<div class="card"><p class="mute" style="margin:0">你在這個俱樂部還沒有球員資料，請重新用邀請連結加入。</p></div>`}
+  <div class="card"><div class="hrow"><h2>🏁 房間列表</h2><span class="mute">${rs.length} 間房</span></div>${list}</div>`;
 }
 function gameCard(g,s){
   const me=myP(),mid=me&&me.id,side=sideOf(g,mid),ed=UI.edit===g.id;
@@ -391,7 +535,7 @@ function slotHtml(s,id,host){
   const AB=slotHtml.ab||{},a=AB[id],name=pname(id);
   return `<div class="slot ${mine?'me':''} ${isH?'host':''} ${off?'off':''}">${isH?'<span class="crown" aria-label="房主">👑</span>':''}
     ${host&&!mine?`<button class="kick" data-act="kick" data-id="${id}" aria-label="${off?'讓 '+esc(name)+' 回到場上':'請 '+esc(name)+' 離開'}">${off?'↺':'×'}</button>`:''}
-    <div class="av">${esc([...name][0]||'?')}</div><div class="nm">${esc(name)}</div><div class="rt">${a?a.r.toFixed(3):'3.000'}${off?' · 離場':mine?' · 我':''}</div></div>`;
+    <div class="avs">${avSvg(avP(id),{sport:s.sport})}</div><div class="nm">${esc(name)}</div><div class="rt">${a?a.r.toFixed(3):'3.000'}${off?' · 離場':mine?' · 我':''}</div></div>`;
 }
 function vGames(){
   const s=room();
@@ -507,7 +651,7 @@ function vMembers(){
     <div class="link">${esc(link)}</div><div class="row"><button class="btn pri" data-act="copyLink">複製邀請連結</button><span class="mute">邀請碼 <b class="num" style="font-size:20px;letter-spacing:.06em">${esc(club.join_code)}</b></span></div></div>
   ${me?`<div class="card"><h2>我在這裡的資料</h2><div class="field"><label for="myname">顯示名稱</label><input type="text" id="myname" maxlength="24" value="${esc(me.name)}"></div><button class="btn pri" data-act="saveMine">儲存</button></div>`:''}
   <div class="card"><div class="hrow"><h2>球員名單（${players.filter(p=>!p.hidden).length}）</h2></div>
-    ${list.map(p=>`<div class="plr" style="${p.hidden?'opacity:.5':''}"><div><b>${esc(p.name)}</b>${roleOf(p)}${p.hidden?'<span class="tag g">已隱藏</span>':''}<br><span class="mute">匹克球 ${AB.pickleball[p.id]?AB.pickleball[p.id].r.toFixed(3):'3.000'} · 羽球 ${AB.badminton[p.id]?AB.badminton[p.id].r.toFixed(3):'3.000'}</span></div>
+    ${list.map(p=>`<div class="plr" style="${p.hidden?'opacity:.5':''}"><div style="display:flex;gap:10px;align-items:center">${miniAv(p.id)}<div><b>${esc(p.name)}</b>${roleOf(p)}${p.hidden?'<span class="tag g">已隱藏</span>':''}<br><span class="mute">匹克球 ${AB.pickleball[p.id]?AB.pickleball[p.id].r.toFixed(3):'3.000'} · 羽球 ${AB.badminton[p.id]?AB.badminton[p.id].r.toFixed(3):'3.000'}</span></div></div>
       <div class="row" style="justify-content:flex-end">${(isAdmin()||!p.user_id)&&p.id!==(me&&me.id)?`<button class="btn sm" data-act="pEdit" data-id="${p.id}">編輯</button>`:''}</div></div>`).join('')}</div>
   <div class="row"><button class="btn" data-act="toClubs">切換俱樂部</button><button class="btn" data-act="editMe">我的帳號</button><button class="btn warn" data-act="logout">登出</button></div>`;
 }
@@ -541,6 +685,16 @@ document.addEventListener('click',async e=>{
   const a=t.dataset.act,id=t.dataset.id,v=t.dataset.v,s=live();
   try{switch(a){
     case 'close':closeModal();return;
+    case 'avEdit':UI.avDraft=Object.assign({},avOf(user.id));UI.avScroll=0;avEditor();return;
+    case 'av':{const m=$('#mbox');UI.avScroll=m?m.scrollTop:0;const n=$('#avn');if(n)UI.avDraft.n=n.value.replace(/\D/g,'').slice(0,2);UI.avDraft[t.dataset.k]=+v;avEditor();return}
+    case 'avRand':{const m=$('#mbox');UI.avScroll=m?m.scrollTop:0;const r=k=>Math.floor(Math.random()*AVP[k].length);
+      UI.avDraft=Object.assign(UI.avDraft,{s:r('s'),h:r('h'),hc:r('hc'),sh:r('sh'),p:r('p'),hw:r('hw'),hwc:r('hwc'),e:r('e')});avEditor();return}
+    case 'avSave':{const n=$('#avn');const av=Object.assign({},UI.avDraft,{n:n?n.value.replace(/\D/g,'').slice(0,2):''});t.disabled=true;
+      const {data,error}=await sb.from('profiles').update({avatar:av}).eq('id',user.id).select().single();if(error){toast(errMsg(error));t.disabled=false;return}
+      profile=data;avatars[user.id]=av;closeModal();toast('換裝完成！');break}
+    case 'newRoom':UI.create=!UI.create;render();if(UI.create){const c=$('#createCard');if(c)c.scrollIntoView({behavior:'smooth',block:'start'})}return;
+    case 'quick':{const me=myP(),w=openRooms().filter(x=>x.status==='lobby'&&x.sport===UI.form.sport&&!(me&&inRoom(x,me.id))).sort((x,y)=>playing(y).length-playing(x).length)[0];
+      if(!w){toast('沒有等待中的房間，開一間吧！');return}t.disabled=true;await rpc('room_join',{sid:w.id});setRoom(w.id);UI.tab='games';ls.set('pbc-tab','games');await loadClub();toast('已進入「'+roomName(w)+'」');scrollTo(0,0);return}
     case 'google':{const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname+location.search}});if(error)toast(errMsg(error));return}
     case 'logout':closeModal();if(chan){sb.removeChannel(chan);chan=null}club=null;await sb.auth.signOut();return;
     case 'saveNick':{const n=$('#nick').value.trim();if(!n){toast('請輸入暱稱');return}
@@ -566,7 +720,7 @@ document.addEventListener('click',async e=>{
       const n=($('#rname')||{}).value;t.disabled=true;
       const row={club_id:club.id,sport:f.sport,cfg:{mode:f.mode,courts:f.courts,target:f.target},place:f.place||null,name:(n||'').trim()||null,status:'lobby',present:[]};
       const {data,error}=await sb.from('sessions').insert(row).select().single();if(error){toast(errMsg(error));t.disabled=false;return}
-      await rpc('room_join',{sid:data.id});setRoom(data.id);UI.tab='games';ls.set('pbc-tab','games');await loadClub();toast('房間開好了！把連結貼到群組叫大家進房');scrollTo(0,0);return}
+      await rpc('room_join',{sid:data.id});setRoom(data.id);UI.create=false;UI.tab='games';ls.set('pbc-tab','games');await loadClub();toast('房間開好了！把連結貼到群組叫大家進房');scrollTo(0,0);return}
     case 'copyRoom':{const x=sessById(id);copyText(`🏓 ${roomName(x)}（${SP[x.sport]}）\n快進房：${location.origin+location.pathname}?join=${club.join_code}&room=${x.id}`);return}
     case 'rCourts':{const r=room();if(!r)return;await saveSess(r,{cfg:Object.assign({},r.cfg,{courts:+v})});if(r.status==='live')toast('下一批新排的輪次會用新的場地數');return}
     case 'kick':{const r=room();if(!r||!isHost(r))return;
