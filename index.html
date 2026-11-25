@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
+.item[data-act]{cursor:pointer}.addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
 .vn-art{height:92px;background:center/cover no-repeat}.vn-art.big{height:150px;border-radius:18px}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
 .vn-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}.vn-body b{font-size:15px;line-height:1.25}.vn-body small{color:var(--mute);font-size:12px}.vn-boss{font-size:13px;color:var(--y);font-weight:700}
 .vn-hero{margin:12px 0}.vn-hinfo h1{margin:12px 0 4px}.vn-bosscard{display:flex;gap:12px;align-items:center;margin-top:12px;padding:14px;border-radius:18px;border:1px solid rgba(253,224,71,.45);background:linear-gradient(120deg,rgba(253,224,71,.14),rgba(23,47,70,.6))}.vn-bosscard .grow{display:flex;flex-direction:column;gap:2px}.vn-bosscard b{font-size:18px}.vn-bosscard small{color:var(--mute)}
@@ -1127,10 +1127,15 @@ document.addEventListener('click',async e=>{
     case 'rReject':{const r=room();if(!r)return;t.disabled=true;await rpc('room_reject',{sid:r.id,p_pid:id});await loadClub();toast('已拒絕 '+nm(id));return}
     case 'addAsk':{const r=room();if(!r)return;const inr=new Set(r.present||[]);
       const cand=players.filter(x=>x.user_id&&!x.hidden&&!inr.has(x.id)).sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'));
-      modal(`<h3>直接把人加進房間</h3><p class="mute" style="margin-top:0">例如家人或已經到場的球友，不用他們申請。</p>
+      modal(`<h3>直接把人加進房間</h3><p class="mute" style="margin-top:0">可以一次勾選多人。對方不用在線上，下次打開 App 就會在房間裡。</p>
         <input type="search" id="addq" placeholder="搜尋名字" oninput="document.querySelectorAll('#addl .item').forEach(e=>e.style.display=e.dataset.n.includes(this.value.trim().toLowerCase())?'':'none')">
-        <div id="addl" style="margin-top:8px">${cand.map(x=>`<div class="item" data-n="${esc(x.name.toLowerCase())}">${headImg(x.id,'s')}<div class="grow"><b>${esc(x.name)}</b>${isPend(r,x.id)?'<small>正在申請</small>':''}</div><button class="btn sm pri" data-act="rAdmit" data-id="${x.id}">加入</button></div>`).join('')||'<p class="empty">球團裡的人都已經在房間了</p>'}</div>
-        <button class="btn wide ghost" data-act="close" style="margin-top:12px">關閉</button>`);return}
+        <div id="addl" style="margin-top:8px">${cand.map(x=>`<div class="item addrow" data-act="addPick" data-id="${x.id}" role="checkbox" aria-checked="false" tabindex="0" data-n="${esc(x.name.toLowerCase())}">${headImg(x.id,'s')}<div class="grow"><b>${esc(x.name)}</b>${isPend(r,x.id)?'<small>正在申請</small>':''}</div><span class="addck" aria-hidden="true"></span></div>`).join('')||'<p class="empty">球團裡的人都已經在房間了</p>'}</div>
+        ${cand.length?`<button class="btn pri wide" id="addGo" data-act="addMulti" disabled style="margin-top:12px">勾選要加入的人</button>`:''}
+        <button class="btn wide ghost" data-act="close" style="margin-top:8px">關閉</button>`);return}
+    case 'addPick':{t.classList.toggle('on');t.setAttribute('aria-checked',t.classList.contains('on'));const n=document.querySelectorAll('#addl .item.on').length,g=$('#addGo');if(g){g.disabled=!n;g.textContent=n?`把 ${n} 人加進房間`:'勾選要加入的人'}return}
+    case 'addMulti':{const r=room();if(!r)return;const ids=[...document.querySelectorAll('#addl .item.on')].map(e=>e.dataset.id);if(!ids.length)return;t.disabled=true;t.textContent='加入中…';
+      let ok=0;for(const pid of ids){try{await rpc('room_admit',{sid:r.id,p_pid:pid});ok++}catch(e){toast(errMsg(e))}}
+      closeModal();await loadClub();toast(`已加入 ${ok} 人`);return}
     case 'rleave':{t.disabled=true;UI.wasIn=null;await rpc('room_leave',{sid:id});UI.wasIn=null;await loadClub();toast('已離開房間');go('today');break}
     case 'ready':{const r=room();if(!r)return;await rpc('room_ready',{sid:r.id,val:v==='1'});await loadClub();return}
     case 'copyCode':{const x=sessById(id);copyText(x.code||'');return}
@@ -1238,7 +1243,7 @@ document.addEventListener('input',e=>{
     if(el)el.innerHTML=!isNaN(x)&&!isNaN(y)?(x===y?'比分不能平手':`${x>y?'A':'B'} 隊獲勝<small>${s&&winner(s,x,y)?'符合勝利條件':'未達勝利條件（時間到可照樣送出）'}</small>`):'<small>輸入兩隊分數</small>'}
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&e.target.matches&&e.target.matches('[role=button][data-act]')){e.preventDefault();e.target.click();return}
+  if(e.key==='Enter'&&e.target.matches&&e.target.matches('[role=button][data-act],[role=checkbox][data-act]')){e.preventDefault();e.target.click();return}
   if(e.key!=='Enter'||e.isComposing)return;const id=e.target.id;
   const goBtn=sel=>{e.preventDefault();const b=$(sel);if(b)b.click()};
   if(id==='code')goBtn('[data-act=join]');else if(id==='cname')goBtn('[data-act=create]');else if(id==='rcode')goBtn('[data-act=codeJoin]');
