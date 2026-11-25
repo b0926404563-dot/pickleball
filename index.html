@@ -156,6 +156,7 @@ body.nonav nav{display:none}
 .hero2{text-align:center;padding:24px 14px}
 .hero2 .fig{width:150px;margin:0 auto 8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.pendbar{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(253,224,71,.14);border:1.5px solid var(--y);color:var(--y);font-size:17px;font-weight:800;text-align:center;letter-spacing:.5px}
 </style>
 </head>
 <body class="nonav">
@@ -464,9 +465,9 @@ function vToday(){
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
   <div class="row2"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
   ${rs.length?`<h2>開著的房間</h2>${rs.map(x=>{const n=playing(x).length,mine=inRoom(x,mid);
-    return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${isPend(x,mid)?' <span class="pill y">申請中</span>':''}${amHost(x)&&(x.pending||[]).length?' <span class="pill live">'+(x.pending||[]).length+' 人申請</span>':''}
+    return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${amHost(x)&&(x.pending||[]).length?' <span class="pill live">'+(x.pending||[]).length+' 人申請</span>':''}
       <div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
-      ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:(isPend(x,mid)?`<button class="btn sm" data-act="rcancel" data-id="${x.id}">取消申請</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">${amHost(x)||(x.present||[]).includes(mid)?'加入':'申請加入'}</button>`)}</div></div>`}).join('')}`:''}
+      ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:(isPend(x,mid)?`<button class="btn sm" data-act="rcancel" data-id="${x.id}">取消申請</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">${amHost(x)||(x.present||[]).includes(mid)?'加入':'申請加入'}</button>`)}</div>${isPend(x,mid)?`<div class="pendbar">⏳ 已送出申請，等房主同意中…</div>`:''}</div>`}).join('')}`:''}
   <h2>近期戰績</h2><div class="card">${recent.length?recent.map(gameLine).join(''):'<p class="empty">還沒有正式戰績，開一場吧！</p>'}</div>`;
 }
 
