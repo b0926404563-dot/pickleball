@@ -568,8 +568,16 @@ function snapCard(g,s,mid){const sn=SN[g.id];if(g.status!=='confirmed')return ''
   const e=expScore(g,s,sn),row=pid=>{const x=sn[pid];if(!x)return '';const d=x.a-x.b;
     return `<div class="dl-row ${pid===mid?'is-self':''}">${headImg(pid,'s')}<div class="grow"><b>${nm(pid)}${pid===mid?'（我）':''}</b>${x.b===3&&!games.some(o=>o.id!==g.id&&o.status==='confirmed'&&[...o.a,...o.b].includes(pid)&&gTime(o)<gTime(g))?'<small>第一場</small>':''}</div>
       <span class="dl-b">${x.b.toFixed(3)}</span><span class="dl-d ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span><span class="dl-a">${x.a.toFixed(3)}</span></div>`};
-  let why='';if(mid&&sn[mid]){const myA=g.a.includes(mid),exM=myA?e.a-e.b:e.b-e.a,acM=myA?g.sa-g.sb:g.sb-g.sa,d=sn[mid].a-sn[mid].b;
-    why=`<p class="dl-why">賽前預估 ${myA?e.a:e.b}：${myA?e.b:e.a}（${exM>0?'你們隊較強':exM<0?'對手較強':'實力相當'}），實際 ${myA?g.sa:g.sb}：${myA?g.sb:g.sa}，${acM>exM?'比預期打得好':acM<exM?'比預期差一點':'跟預期差不多'}，所以 ${d>=0.0005?'加 '+fmtD(d).slice(1):d<=-0.0005?'扣 '+fmtD(d).slice(1):'分數幾乎不變'}。</p>`}
+  let why='';if(mid&&sn[mid]){const myA=g.a.includes(mid),exM=myA?e.a-e.b:e.b-e.a,acM=myA?g.sa-g.sb:g.sb-g.sa,d=sn[mid].a-sn[mid].b,gap=acM-exM;
+    const perf=gap>=4?'比預期好很多':gap>0?'比預期好一點':gap<=-4?'比預期差很多':gap<0?'比預期差一點':'跟預期差不多';
+    const res=d>=0.0005?'加 '+fmtD(d).slice(1):d<=-0.0005?'扣 '+fmtD(d).slice(1):'分數幾乎不變';
+    const prevN=pid=>games.filter(o=>o.id!==g.id&&o.status==='confirmed'&&[...o.a,...o.b].includes(pid)&&gTime(o)<gTime(g)).length;
+    const mates=(myA?g.a:g.b).filter(p=>p!==mid),rookie=mates.find(p=>prevN(p)<3);
+    let note='';
+    if((gap<0&&d>0.0005)||(gap>0&&d<-0.0005)){
+      note=rookie?`這場${gap<0?'輸掉的分數':'多贏的分數'}主要算在搭檔 ${nm(rookie)} 身上（他打不到 3 場，分數還在定級，變動比較大），所以你反而${d>0?'小加':'小扣'}。`
+        :`系統會用所有比賽一起重新校正，這場也讓大家過去幾場的表現被重新評估，所以你的分數反而${d>0?'小加':'小扣'}。`}
+    why=`<p class="dl-why">賽前預估 ${myA?e.a:e.b}：${myA?e.b:e.a}（${exM>0?'你們隊較強':exM<0?'對手較強':'實力相當'}），實際 ${myA?g.sa:g.sb}：${myA?g.sb:g.sa}，${perf}。${note||`所以${res}。`}</p>`}
   return `<h2>這場的分數變化</h2><div class="card"><div class="dl-head"><span>A 隊</span><span>賽前</span><span>加減</span><span>賽後</span></div>${g.a.map(row).join('')}
     <div class="dl-head" style="margin-top:6px"><span>B 隊</span><span></span><span></span><span></span></div>${g.b.map(row).join('')}
     <p class="mute" style="font-size:13px;margin:10px 0 0">賽前預估比分 A ${e.a}：${e.b} B。打得比預估好就加分、比預估差就扣分；實力越接近，一場的影響越大。</p>${why}</div>`}
