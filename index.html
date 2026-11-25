@@ -181,7 +181,8 @@ const pk=(x,y)=>x<y?x+'|'+y:y+'|'+x;
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const SP={pickleball:'匹克球',badminton:'羽球'};
 const RS={pickleball:'dupr',badminton:'bdupr'},RK=2;
-const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const LSP=(()=>{const v=parseInt(new URLSearchParams(location.search).get('test'));return v>=1&&v<=20?'t'+v+'-':''})();
+const ls={get:k=>{try{return localStorage.getItem(LSP+k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(LSP+k,v)}catch(e){}}};
 function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2400)}
 function modal(html){$('#mbox').innerHTML=html;$('#modal').classList.add('show');const i=$('#mbox input');if(i)setTimeout(()=>i.focus(),50)}
 function closeModal(){$('#modal').classList.remove('show')}
@@ -657,7 +658,18 @@ function vAvatar(){
 let needR=false;
 function soft(){const a=document.activeElement;if(a&&a.matches('input,textarea,select')&&$('#view').contains(a)){needR=true;return}render()}
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(needR&&!(a&&a.matches('input,select')&&$('#view').contains(a))){needR=false;render()}},0));
+// 被房主移出：本來在房間裡，同步後名單沒有自己 → 回大廳並提示
+function checkKicked(){
+  if(UI.view!=='club'||!club)return;const me=myP();if(!me)return;
+  const s=UI.room?sessById(UI.room):null;
+  if(s&&s.status!=='done'&&inRoom(s,me.id)){UI.wasIn=s.id;return}
+  if(!UI.wasIn)return;const w=sessById(UI.wasIn);UI.wasIn=null;
+  if(!w||w.status==='done'||inRoom(w,me.id))return;
+  setRoom(null);UI.game=null;if(UI.tab==='games')UI.tab='today';
+  setTimeout(()=>toast(w.status==='lobby'?'房主把你移出了「'+roomName(w)+'」':'房主把你標記為離場，暫時不會排到你'),50);
+}
 function render(){
+  checkKicked();
   const v=UI.view;let html;
   if(v==='setup')html=vSetup();else if(v==='login')html=vLogin();else if(v==='nick')html=vNick();else if(v==='clubs')html=vClubs();
   else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:vRank,records:vRecords,members:vMembers,avatar:vAvatar}[UI.tab]||vToday)()}
@@ -722,7 +734,7 @@ document.addEventListener('click',async e=>{
     case 'enter':setRoom(id);UI.game=null;go('games');break;
     case 'rjoin':{t.disabled=true;closeModal();await rpc('room_join',{sid:id});setRoom(id);UI.game=null;go('games');await loadClub();
       const x=sessById(id);if(x&&x.status==='live')toast(isHost(x)?'已加入；可在房主設定按「重排」把新的人排進去':'已加入，房主重排後會排你上場');else toast('已進入房間');return}
-    case 'rleave':{t.disabled=true;await rpc('room_leave',{sid:id});await loadClub();toast('已離開房間');go('today');break}
+    case 'rleave':{t.disabled=true;UI.wasIn=null;await rpc('room_leave',{sid:id});UI.wasIn=null;await loadClub();toast('已離開房間');go('today');break}
     case 'ready':{const r=room();if(!r)return;await rpc('room_ready',{sid:r.id,val:v==='1'});await loadClub();return}
     case 'copyCode':{const x=sessById(id);copyText(x.code||'');return}
     case 'copyRoom':{const x=sessById(id);copyText(`🏓 ${roomName(x)}（${SP[x.sport]}）${x.code?'房間代碼 '+x.code:''}\n快進房：${location.origin+location.pathname}?join=${club.join_code}&room=${x.id}`);return}
