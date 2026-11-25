@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>今天誰贏球</title>
+<title>PickleScore 匹克球・羽球計分</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -70,6 +70,16 @@ nav .dot{position:absolute;top:10px;right:22%;min-width:18px;height:18px;border-
 .teams{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center}
 .ta{color:var(--a);font-weight:600}.tb{color:var(--b);font-weight:600}.mine{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 .sc{font-size:30px;line-height:1;text-align:right}
+.lv2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.lvs{border-radius:14px;padding:10px 8px;text-align:center;background:var(--soft)}
+.lvs .tm{font-size:13px;font-weight:700;min-height:2.6em;display:flex;align-items:center;justify-content:center;line-height:1.3}
+.lvs .n{font-size:56px;font-weight:900;line-height:1.05;font-family:"Barlow Condensed",sans-serif;font-variant-numeric:tabular-nums}
+.lvs.a .n{color:var(--a)}.lvs.b .n{color:var(--b)}
+.plus{width:100%;min-height:68px;border:0;border-radius:14px;font-size:26px;font-weight:900;color:#fff;margin-top:6px;cursor:pointer;touch-action:manipulation}
+.plus.a{background:#1d4f9e}.plus.b{background:#c94e22}.plus:active{transform:scale(.97)}
+.lvbar{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.winbox{margin-top:10px;border-radius:14px;padding:10px 12px;background:var(--ball);color:#1b2400;font-weight:800;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.livetag{display:inline-block;background:#e23b3b;color:#fff;font-size:11px;font-weight:800;border-radius:6px;padding:0 6px;margin-left:6px}
 .inrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:10px}
 .inrow input{height:52px;text-align:center;font-size:24px;font-family:"Barlow Condensed",sans-serif;font-weight:800}
 .note{font-size:13px;color:var(--mute);margin-top:6px}
@@ -162,7 +172,7 @@ tr.me td{background:var(--soft)}
 </style>
 </head>
 <body class="nonav">
-<header><div class="hd"><h1>今天誰贏球</h1><button class="hbtn" id="hbtn" data-act="toClubs" hidden></button></div><div class="sub" id="sub">匹克球・羽球 俱樂部</div></header>
+<header><div class="hd"><h1>PickleScore</h1><button class="hbtn" id="hbtn" data-act="toClubs" hidden></button></div><div class="sub" id="sub">匹克球・羽球計分</div></header>
 <main id="view"><div class="card hero"><p class="mute">載入中…</p></div></main>
 <nav id="nav">
 <button data-tab="today">大廳</button><button data-tab="games">房間</button><button data-tab="rank">排名</button><button data-tab="records">紀錄</button><button data-tab="members">成員</button>
@@ -188,9 +198,9 @@ const errMsg=e=>{const m=(e&&(e.message||e.error_description))||'發生錯誤，
 async function copyText(text){try{await navigator.clipboard.writeText(text);toast('已複製')}catch(e){modal(`<h3>請長按複製</h3><textarea readonly>${esc(text)}</textarea><div class="row" style="margin-top:12px"><button class="btn" data-act="close">關閉</button></div>`)}}
 
 /* ---------- 狀態 ---------- */
-let avatars={},sb=null,user=null,profile=null,myClubs=[],club=null,role=null,members=[],players=[],sessions=[],games=[],chan=null,loadingClub=false;
+let liveEv={},avatars={},sb=null,user=null,profile=null,myClubs=[],club=null,role=null,members=[],players=[],sessions=[],games=[],chan=null,loadingClub=false;
 const UI={room:ls.get('pbc-room')||null,view:'boot',tab:ls.get('pbc-tab')||'today',rankView:'today',rankSport:'pickleball',detail:null,sel:null,edit:null,gen:false,
-  form:Object.assign({sport:'pickleball',mode:'doubles',courts:1,target:11,place:''},(()=>{try{return JSON.parse(ls.get('pbc-form'))||{}}catch(e){return{}}})())};
+  form:Object.assign({sport:'pickleball',mode:'doubles',courts:1,target:11,place:'',score:'final',win2:true},(()=>{try{return JSON.parse(ls.get('pbc-form'))||{}}catch(e){return{}}})())};
 
 const P=id=>players.find(p=>p.id===id);
 const pname=id=>P(id)?P(id).name:'（已移除）';
@@ -198,6 +208,11 @@ const nm=id=>esc(pname(id));
 const myP=()=>user?players.find(p=>p.user_id===user.id):null;
 const isAdmin=()=>role==='owner'||role==='admin';
 const sessById=id=>sessions.find(s=>s.id===id);
+const isLive=s=>!!s&&!!s.cfg&&s.cfg.score==='live'&&s.status==='live';
+const scoreOf=g=>liveEv[g.id]||[0,0];
+function winner(s,x,y){const t=+((s.cfg||{}).target)||0;if(!t)return null;const w2=!!(s.cfg||{}).win2;
+  if(x>=t&&x>y&&(!w2||x-y>=2))return 'a';if(y>=t&&y>x&&(!w2||y-x>=2))return 'b';return null}
+const canScore=(g,s)=>{const me=myP();return !!user&&(isAdmin()||(s&&s.created_by===user.id)||!!(me&&sideOf(g,me.id)))};
 const openRooms=()=>sessions.filter(s=>s.status!=='done');
 const inRoom=(s,pid)=>!!pid&&(s.present||[]).includes(pid)&&!(s.away||[]).includes(pid);
 function room(){
@@ -313,16 +328,25 @@ async function loadClub(){
     const uids=[...new Set(members.map(m=>m.user_id))];
     if(uids.length){const {data:pf}=await sb.from('profiles').select('id,avatar').in('id',uids);(pf||[]).forEach(x=>{if(x.avatar&&Object.keys(x.avatar).length)avatars[x.id]=x.avatar})}
     if(profile&&profile.avatar&&Object.keys(profile.avatar).length)avatars[user.id]=profile.avatar;
+    await loadEvents();
     const m=members.find(x=>x.user_id===user.id);role=m?m.role:null;
     if(!m){toast('你已經不在這個俱樂部了');club=null;UI.view='clubs';await loadClubs()}
   }catch(e){toast(errMsg(e))}
   loadingClub=false;soft();
 }
+async function loadEvents(){
+  const ids=games.filter(g=>g.status==='open'&&isLive(sessById(g.session_id))).map(g=>g.id);liveEv={};
+  if(!ids.length)return;
+  const {data,error}=await sb.from('score_events').select('game_id,side').in('game_id',ids).eq('voided',false);
+  if(error)return;(data||[]).forEach(e=>{const x=liveEv[e.game_id]||(liveEv[e.game_id]=[0,0]);x[e.side==='a'?0:1]++});
+}
+let et=null;const schedEv=()=>{clearTimeout(et);et=setTimeout(async()=>{await loadEvents();soft()},250)};
 let rt=null;const schedReload=()=>{clearTimeout(rt);rt=setTimeout(loadClub,500)};
 function subscribe(){
   if(chan){sb.removeChannel(chan);chan=null}if(!club)return;
   chan=sb.channel('club-'+club.id);
   ['games','sessions','players','members'].forEach(t=>chan.on('postgres_changes',{event:'*',schema:'public',table:t,filter:'club_id=eq.'+club.id},schedReload));
+  chan.on('postgres_changes',{event:'*',schema:'public',table:'score_events',filter:'club_id=eq.'+club.id},schedEv);
   chan.subscribe();
 }
 setInterval(()=>{if(club&&!document.hidden&&UI.view==='club'&&(room()||UI.tab==='today'))loadClub()},15000);
@@ -489,7 +513,7 @@ function vToday(){
   const rs=openRooms(),me=myP(),f=UI.form,cur=room();
   const waiting=rs.filter(x=>x.status==='lobby'&&x.sport===f.sport&&!(me&&inRoom(x,me.id))).sort((x,y)=>playing(y).length-playing(x).length);
   const recent=[...new Set(sessions.map(x=>x.place).filter(Boolean))].slice(0,6);
-  const cfgTxt=x=>`${per(x)===4?'雙打':'單打'} · ${(x.cfg&&x.cfg.courts)||1} 面 · ${x.cfg&&x.cfg.target?'打到 '+x.cfg.target:'不限分數'}${x.place?' · '+esc(x.place):''}`;
+  const cfgTxt=x=>`${per(x)===4?'雙打':'單打'} · ${(x.cfg&&x.cfg.courts)||1} 面 · ${x.cfg&&x.cfg.target?'打到 '+x.cfg.target:'不限分數'}${x.cfg&&x.cfg.score==='live'?' · 即時計分':''}${x.place?' · '+esc(x.place):''}`;
   const list=rs.length?`<div class="rooms">${rs.map(x=>{const mine=me&&inRoom(x,me.id),n=playing(x).length;
     return `<div class="rm ${mine?'mine':''}"><div><b>${esc(roomName(x))}</b>${sportTag(x)}${x.status==='live'?'<span class="live">比賽中</span>':'<span class="wait">等待中</span>'}
       <br><span class="mute">👥 ${n} 人 · ${cfgTxt(x)}</span><div class="heads">${playing(x).slice(0,8).map(id=>miniAv(id)).join('')}</div></div>
@@ -507,6 +531,8 @@ function vToday(){
     <div class="field"><label>場地數</label>${seg(f.courts,'fCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}</div>
     <div class="field"><label>打到幾分</label>${seg([11,15,21,0].includes(+f.target)?f.target:'x','fTarget',[[11,'11'],[15,'15'],[21,'21'],[0,'不限']])}
       <div class="row" style="margin-top:8px;flex-wrap:nowrap"><span class="mute" style="white-space:nowrap">或自訂</span><input type="number" id="tgt" inputmode="numeric" min="1" max="99" style="max-width:110px" value="${[11,15,21,0].includes(+f.target)?'':f.target}"><span class="mute">分</span></div></div>
+    <div class="field"><label>計分方式</label>${seg(f.score||'final','fScore',[['final','打完填比分'],['live','即時計分（逐分）']])}</div>
+    <div class="field"><label>要領先 2 分才算贏？</label>${seg(f.win2?1:0,'fWin2',[[1,'要'],[0,'不用']])}</div>
     <div class="field"><label for="place">在哪裡打</label><input type="text" id="place" maxlength="40" value="${esc(f.place)}" placeholder="例如：永康運動中心">
       ${recent.length?`<div class="row" style="margin-top:8px">${recent.map(x=>`<button class="pchip" style="min-height:38px;font-size:14px" data-act="placePick" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`:''}</div>
     <button class="btn big go" data-act="createRoom">${cur?'開新房間（會離開目前的房間）':'開房間'}</button>
@@ -519,12 +545,17 @@ function gameCard(g,s){
   const st={open:'待比賽',pending:'待確認',confirmed:'已確認'}[g.status];
   const inputs=`<div class="inrow"><input type="number" inputmode="numeric" min="0" max="99" id="xa-${g.id}" aria-label="A 隊分數" placeholder="A" value="${ed&&g.sa!=null?g.sa:''}"><input type="number" inputmode="numeric" min="0" max="99" id="xb-${g.id}" aria-label="B 隊分數" placeholder="B" value="${ed&&g.sb!=null?g.sb:''}"><button class="btn pri" data-act="report" data-id="${g.id}">送出</button></div>`;
   let body='';
-  if(g.status==='open'||ed)body=inputs+(ed?`<div class="row" style="margin-top:6px"><button class="btn sm" data-act="editOff">取消修改</button></div>`:'');
+  if(g.status==='open'&&!ed&&isLive(s)){const [x,y]=scoreOf(g),w=winner(s,x,y),cs=canScore(g,s);
+    body=`<div class="lv2"><div class="lvs a"><div class="tm">${team(g.a,mid)}</div><div class="n">${x}</div>${cs?`<button class="plus a" data-act="pt" data-id="${g.id}" data-v="a" aria-label="A 隊得 1 分">A +1</button>`:''}</div>
+      <div class="lvs b"><div class="tm">${team(g.b,mid)}</div><div class="n">${y}</div>${cs?`<button class="plus b" data-act="pt" data-id="${g.id}" data-v="b" aria-label="B 隊得 1 分">B +1</button>`:''}</div></div>
+      ${w?`<div class="winbox"><span>🏆 ${w==='a'?'A':'B'} 隊拿下這場 ${x}:${y}</span>${cs?`<button class="btn sm" data-act="lvSubmit" data-id="${g.id}">送出比分</button>`:''}</div>`:''}
+      ${cs?`<div class="lvbar"><button class="btn sm" data-act="ptUndo" data-id="${g.id}" ${x+y?'':'disabled'}>↶ 復原上一分</button>${w?'':`<button class="btn sm" data-act="lvSubmit" data-id="${g.id}" ${x!==y?'':'disabled'}>提前結束、送出 ${x}:${y}</button>`}<button class="btn sm" data-act="edit" data-id="${g.id}">改用手動填</button></div>`:'<p class="mute" style="margin:8px 0 0">由場上球員或房主記分。</p>'}`}
+  else if(g.status==='open'||ed)body=inputs+(ed?`<div class="row" style="margin-top:6px"><button class="btn sm" data-act="editOff">取消修改</button></div>`:'');
   else if(g.status==='pending')body=`<div class="note">${esc(unameByUid(g.reported_by))} 回報，等待${g.reported_side?'對手':''}確認</div><div class="row" style="margin-top:8px">${canConfirm(g)&&g.reported_by!==user.id?`<button class="btn go sm" data-act="confirm" data-id="${g.id}">比分正確，確認</button>`:''}<button class="btn sm" data-act="edit" data-id="${g.id}">比分不對，修改</button></div>`;
   else body=`<div class="note">已由 ${esc(unameByUid(g.confirmed_by))} 確認${isAdmin()?` · <button class="btn sm" data-act="edit" data-id="${g.id}" style="min-height:30px">修改</button>`:''}</div>`;
   const scA=g.sa!=null&&g.status!=='open'?g.sa:'',scB=g.sb!=null&&g.status!=='open'?g.sb:'';
-  return `<div class="game"><div class="gh"><span class="ct">場地 ${g.court}${side?' · 我的場':''}</span><span class="st ${g.status}">${st}</span></div>
-    <div class="teams"><span class="ta">A ${team(g.a,mid)}</span><span class="num sc ta">${scA}</span><span class="tb">B ${team(g.b,mid)}</span><span class="num sc tb">${scB}</span></div>${body}</div>`;
+  return `<div class="game"><div class="gh"><span class="ct">場地 ${g.court}${side?' · 我的場':''}${g.status==='open'&&isLive(s)?'<span class="livetag">即時</span>':''}</span><span class="st ${g.status}">${st}</span></div>
+    ${g.status==='open'&&!ed&&isLive(s)?'':`<div class="teams"><span class="ta">A ${team(g.a,mid)}</span><span class="num sc ta">${scA}</span><span class="tb">B ${team(g.b,mid)}</span><span class="num sc tb">${scB}</span></div>`}${body}</div>`;
 }
 function pendingCard(){
   const list=toConfirm();if(!list.length)return '';
@@ -545,7 +576,7 @@ function vGames(){
   const ids=(s.present||[]).filter(P),cap=Math.max(k,((s.cfg&&s.cfg.courts)||1)*k),empty=s.status==='lobby'?Math.max(0,cap-ids.length):0;
   const cu=courtsUsed(s),rest=pl.length-cu*k;
   const head=`<div class="card"><div class="hrow"><h2>${esc(roomName(s))}${sportTag(s)}${s.status==='live'?'<span class="live">比賽中</span>':'<span class="wait">等待中</span>'}</h2><button class="btn sm" data-tab="today">‹ 大廳</button></div>
-    <p class="mute" style="margin:0">${s.place?esc(s.place)+' · ':''}${k===4?'雙打':'單打'} · ${s.cfg.target?'打到 '+s.cfg.target+' 分':'不限分數'}${s.status==='live'?' · 已打 '+gamesOf(s.id).filter(g=>g.status!=='open').length+' 場':''}</p>
+    <p class="mute" style="margin:0">${s.place?esc(s.place)+' · ':''}${k===4?'雙打':'單打'} · ${s.cfg.target?'打到 '+s.cfg.target+' 分'+(s.cfg.win2?'（領先 2 分）':''):'不限分數'} · ${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.status==='live'?' · 已打 '+gamesOf(s.id).filter(g=>g.status!=='open').length+' 場':''}</p>
     ${host?`<div class="field" style="margin:12px 0 0"><label>場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}</div>`:''}</div>
   <div class="card"><div class="hrow"><h2>房內球員（${pl.length}）</h2>${s.status==='lobby'&&pl.length>=k?`<span class="mute">每輪 ${cu} 場${rest>0?'，'+rest+' 人輪休':''}</span>`:''}</div>
     <div class="slots">${ids.map(id=>slotHtml(s,id,host)).join('')}${Array.from({length:empty},()=>`<div class="slot empty"><div class="av">＋</div>等待加入</div>`).join('')}</div>
@@ -635,7 +666,7 @@ function vDetail(s){
 }
 function report(s){
   const gl=gamesOf(s.id).filter(g=>g.status==='confirmed'),st=statsOf(gl),AB=ability(s.sport,s.id);
-  let t=`${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【勝率排名】\n`;
+  let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【勝率排名】\n`;
   st.forEach((x,i)=>{const d=x.pf-x.pa;t+=`${i+1}. ${pname(x.id)}  ${x.w}勝${x.l}敗  分差${d>0?'+':''}${d}${AB[x.id]?'  實力 '+AB[x.id].r.toFixed(3):''}\n`});
   t+='\n【各場比分】\n';gl.forEach(g=>t+=`${g.a.map(pname).join('/')} ${g.sa}-${g.sb} ${g.b.map(pname).join('/')}\n`);
   return t+'\n（只列出已確認的比分）';
@@ -667,7 +698,7 @@ function render(){
   else html=`<div class="card hero"><p class="mute">載入中…</p></div>`;
   $('#view').innerHTML=html;
   const inClub=v==='club'&&club;document.body.classList.toggle('nonav',!inClub);
-  $('#sub').textContent=inClub?club.name+(profile?' · '+((myP()||{}).name||profile.nickname):''):'匹克球・羽球 俱樂部';
+  $('#sub').textContent=inClub?club.name+(profile?' · '+((myP()||{}).name||profile.nickname):''):'匹克球・羽球計分';
   const hb=$('#hbtn');hb.hidden=!inClub;hb.textContent='切換';
   const n=user&&inClub?toConfirm().length:0;
   document.querySelectorAll('nav button').forEach(b=>{b.classList.toggle('on',b.dataset.tab===UI.tab);const old=b.querySelector('.dot');if(old)old.remove();
@@ -711,6 +742,14 @@ document.addEventListener('click',async e=>{
     case 'fMode':UI.form.mode=v;saveForm();break;
     case 'fCourts':UI.form.courts=+v;saveForm();break;
     case 'fTarget':UI.form.target=+v;saveForm();break;
+    case 'fScore':UI.form.score=v;saveForm();break;
+    case 'fWin2':UI.form.win2=v==='1';saveForm();break;
+    case 'pt':{const g=games.find(x=>x.id===id),cid=(crypto.randomUUID?crypto.randomUUID():([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^Math.random()*16>>c/4).toString(16)));
+      const x=liveEv[id]||(liveEv[id]=[0,0]);x[v==='a'?0:1]++;render();if(navigator.vibrate)navigator.vibrate(15);
+      try{await rpc('score_point',{gid:id,sd:v,cid})}catch(err){x[v==='a'?0:1]--;render();toast(errMsg(err))}return}
+    case 'ptUndo':t.disabled=true;await rpc('score_undo',{gid:id});await loadEvents();break;
+    case 'lvSubmit':{const [x,y]=scoreOf({id});if(x===y){toast('比分不能平手');return}t.disabled=true;
+      await rpc('report_score',{gid:id,x,y});toast(isAdmin()?'已送出':'已送出，等對手確認');await loadClub();await ensureRounds();return}
     case 'placePick':UI.form.place=v;saveForm();break;
     case 'enter':setRoom(id);UI.tab='games';ls.set('pbc-tab','games');scrollTo(0,0);break;
     case 'rjoin':{t.disabled=true;await rpc('room_join',{sid:id});setRoom(id);UI.tab='games';ls.set('pbc-tab','games');await loadClub();
@@ -718,7 +757,7 @@ document.addEventListener('click',async e=>{
     case 'rleave':{t.disabled=true;await rpc('room_leave',{sid:id});await loadClub();toast('已離開房間');UI.tab='today';ls.set('pbc-tab','today');break}
     case 'createRoom':{const me=myP();if(!me)return;const f=UI.form,pl=$('#place');if(pl)f.place=pl.value.trim();saveForm();
       const n=($('#rname')||{}).value;t.disabled=true;
-      const row={club_id:club.id,sport:f.sport,cfg:{mode:f.mode,courts:f.courts,target:f.target},place:f.place||null,name:(n||'').trim()||null,status:'lobby',present:[]};
+      const row={club_id:club.id,sport:f.sport,cfg:{mode:f.mode,courts:f.courts,target:f.target,score:f.score||'final',win2:!!f.win2},place:f.place||null,name:(n||'').trim()||null,status:'lobby',present:[]};
       const {data,error}=await sb.from('sessions').insert(row).select().single();if(error){toast(errMsg(error));t.disabled=false;return}
       await rpc('room_join',{sid:data.id});setRoom(data.id);UI.create=false;UI.tab='games';ls.set('pbc-tab','games');await loadClub();toast('房間開好了！把連結貼到群組叫大家進房');scrollTo(0,0);return}
     case 'copyRoom':{const x=sessById(id);copyText(`🏓 ${roomName(x)}（${SP[x.sport]}）\n快進房：${location.origin+location.pathname}?join=${club.join_code}&room=${x.id}`);return}

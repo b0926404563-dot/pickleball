@@ -292,3 +292,60 @@ grant select, insert, update, delete on profiles, clubs, members, players, sessi
 do $$ begin
   alter publication supabase_realtime add table games, sessions, players, members;
 exception when others then null; end $$;
+
+-- ---------- 即時計分 ----------
+create table if not exists score_events(
+  id bigint generated always as identity primary key,
+  game_id uuid not null references games(id) on delete cascade,
+  club_id uuid not null references clubs(id) on delete cascade,
+  side text not null check (side in ('a','b')),
+  client_id uuid not null unique,                   -- 防止網路重送造成重複得分
+  voided boolean not null default false,            -- 復原＝作廢最後一分
+  created_by uuid references profiles(id) default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create index if not exists score_events_game on score_events(game_id, id);
+alter table score_events enable row level security;
+drop policy if exists se_sel on score_events;
+create policy se_sel on score_events for select to authenticated using (is_member(club_id));
+grant select on score_events to authenticated;
+
+create or replace function can_score(g games) returns boolean
+language sql security definer stable set search_path = public as $$
+  select is_admin(g.club_id)
+      or my_side(g) is not null
+      or exists(select 1 from sessions s where s.id = g.session_id and s.created_by = auth.uid())
+$$;
+
+create or replace function score_point(gid uuid, sd text, cid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g games;
+begin
+  select * into g from games where id = gid;
+  if g.id is null or not is_member(g.club_id) then raise exception '沒有權限'; end if;
+  if sd not in ('a','b') then raise exception '隊伍不對'; end if;
+  if g.status <> 'open' then raise exception '這場已經送出比分了'; end if;
+  if not exists(select 1 from sessions s where s.id = g.session_id and s.status = 'live') then raise exception '比賽尚未開始或已結束'; end if;
+  if not can_score(g) then raise exception '只有場上球員或房主可以記分'; end if;
+  insert into score_events(game_id, club_id, side, client_id) values (gid, g.club_id, sd, cid)
+  on conflict (client_id) do nothing;
+end $$;
+
+create or replace function score_undo(gid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare g games;
+begin
+  select * into g from games where id = gid;
+  if g.id is null or not is_member(g.club_id) then raise exception '沒有權限'; end if;
+  if g.status <> 'open' then raise exception '這場已經送出比分了'; end if;
+  if not can_score(g) then raise exception '只有場上球員或房主可以記分'; end if;
+  update score_events set voided = true
+   where id = (select id from score_events where game_id = gid and not voided order by id desc limit 1);
+end $$;
+
+revoke execute on function can_score(games) from public, anon;
+grant execute on function score_point(uuid,text,uuid), score_undo(uuid) to authenticated;
+
+do $$ begin
+  alter publication supabase_realtime add table score_events;
+exception when others then null; end $$;
