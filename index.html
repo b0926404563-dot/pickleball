@@ -674,7 +674,7 @@ function mrRow(g,s,mid){
   const iWon=mine&&ok&&(g.a.includes(mid)?aw:bw),iLost=mine&&ok&&!iWon&&(aw||bw),single=g.a.length===1;
   const team=(lab,ids,sc,won)=>`<div class="mr-team ${won?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(id=>`<span class="mr-p ${id===mid?'is-self':''}">${nm(id)}${id===mid?'（我）':''}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${won?'<span class="mr-win">勝</span>':''}<span>${sc==null?'—':sc}</span></span></div>`;
   return `<button class="mr-row ${mine?'is-mine':''} ${iWon?'is-win':''} ${iLost?'is-loss':''} ${ok?'':'is-pending'}" data-act="openGame" data-id="${g.id}">
-    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'<span class="mr-status">已確認</span>':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
+    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
     ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,bw)}</button>`}
 function vDetail(s){
   const gl=gamesOf(s.id).filter(g=>g.status!=='open'),cf=gl.filter(g=>g.status==='confirmed'),st=statsOf(cf),AB=ability(s.sport,s.id);
