@@ -196,7 +196,9 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
+.item[data-act]{cursor:pointer}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
+.inv-pop{text-align:center}.inv-ic{font-size:44px;line-height:1;animation:invb 1s ease-in-out infinite alternate}.inv-pop h3{margin:8px 0 6px;font-size:22px}.inv-room{margin:0 0 14px}.inv-room b{font-size:18px;color:var(--y)}@keyframes invb{to{transform:translateY(-6px) rotate(8deg)}}
+.addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
 .vn-art{height:92px;background:center/cover no-repeat}.vn-art.big{height:150px;border-radius:18px}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
 .vn-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}.vn-body b{font-size:15px;line-height:1.25}.vn-body small{color:var(--mute);font-size:12px}.vn-boss{font-size:13px;color:var(--y);font-weight:700}
 .vn-hero{margin:12px 0}.vn-hinfo h1{margin:12px 0 4px}.vn-bosscard{display:flex;gap:12px;align-items:center;margin-top:12px;padding:14px;border-radius:18px;border:1px solid rgba(253,224,71,.45);background:linear-gradient(120deg,rgba(253,224,71,.14),rgba(23,47,70,.6))}.vn-bosscard .grow{display:flex;flex-direction:column;gap:2px}.vn-bosscard b{font-size:18px}.vn-bosscard small{color:var(--mute)}
@@ -674,7 +676,8 @@ function joinBtn(s,mid,cls){
 function reqCard(s){if(!amHost(s))return '';const pd=(s.pending||[]).filter(P);
   return pd.length?`<div class="card hl"><div class="split"><b>加入申請（${pd.length}）</b><small class="mute">你同意了才會進房</small></div>
   ${pd.map(id=>`<div class="item">${headImg(id,'s')}<div class="grow"><b>${nm(id)}</b><small>想加入這個房間</small></div><button class="btn sm pri" data-act="rAdmit" data-id="${id}">同意</button><button class="btn sm" data-act="rReject" data-id="${id}">拒絕</button></div>`).join('')}</div>`:''}
-const addBtn=s=>amHost(s)?`<button class="btn wide" data-act="addAsk" style="margin-top:10px">＋ 直接把人加進房間</button>`:'';
+const invCard=s=>{if(!amHost(s))return '';const iv=(s.invited||[]).filter(P);return iv.length?`<div class="inv-wait"><small class="mute">已邀請，等對方回覆</small>${iv.map(id=>`<span class="inv-chip">${headImg(id,'s')}${nm(id)}<button aria-label="取消邀請 ${esc(pname(id))}" data-act="uninvite" data-id="${id}">×</button></span>`).join('')}</div>`:''};
+const addBtn=s=>amHost(s)?`${invCard(s)}<button class="btn wide" data-act="addAsk" style="margin-top:10px">＋ 邀請球友進房間</button>`:'';
 async function joinRoom(sid){
   const res=await rpc('room_join',{sid});
   if(res==='pending'){UI.pendRoom=sid;await loadClub();toast('已送出申請，等房主按同意');return}
@@ -1036,8 +1039,21 @@ let needR=false;
 function soft(){const a=document.activeElement;if(a&&a.matches('input,textarea,select')&&$('#view').contains(a)){needR=true;return}render()}
 document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.activeElement;if(needR&&!(a&&a.matches('input,select')&&$('#view').contains(a))){needR=false;render()}},0));
 // 被房主移出：本來在房間裡，同步後名單沒有自己 → 回大廳並提示
+function checkInvites(me){
+  // 被邀請的人：不管在哪個畫面，立刻跳出邀請
+  const iv=sessions.find(x=>x.status!=='done'&&(x.invited||[]).includes(me.id));
+  if(iv&&UI.invOpen!==iv.id&&!UI.invSkip){UI.invOpen=iv.id;const hp=players.find(p=>p.user_id===iv.created_by),cur=room(),v=iv.venue_id&&venById(iv.venue_id);
+    setTimeout(()=>modal(`<div class="inv-pop"><div class="inv-ic">🏓</div><h3>${hp?esc(hp.name):'房主'} 邀請你加入</h3>
+      <p class="inv-room"><b>${esc(roomName(iv))}</b><br><span class="mute">${SP[iv.sport]}${v?'・'+esc(v.name):iv.place?'・'+esc(iv.place):''}・${(iv.present||[]).length} 人在房內</span></p>
+      ${cur&&cur.id!==iv.id&&inRoom(cur,me.id)?`<p class="mute" style="font-size:13px">接受的話會離開目前的「${esc(roomName(cur))}」。</p>`:''}
+      <div class="row2"><button class="btn pri" data-act="invYes" data-id="${iv.id}">接受</button><button class="btn" data-act="invNo" data-id="${iv.id}">拒絕</button></div></div>`),30)}
+  else if(!iv&&UI.invOpen){const was=sessById(UI.invOpen);UI.invOpen=null;closeModal();if(was&&was.status!=='done'&&!inRoom(was,me.id))setTimeout(()=>toast('房主取消了邀請'),50)}
+  // 房主：對方拒絕 → 提示
+  const now={};openRooms().filter(amHost).forEach(r=>now[r.id]=new Set(r.invited||[]));
+  if(UI.invSeen)for(const sid in UI.invSeen){const r=sessById(sid);if(!r||!now[sid])continue;UI.invSeen[sid].forEach(pid=>{if(!now[sid].has(pid)&&!(r.present||[]).includes(pid)&&!UI.invCancel?.has(pid))setTimeout(()=>toast(nm(pid)+' 婉拒了邀請'),60)})}
+  UI.invSeen=now;UI.invCancel=null}
 function checkKicked(){
-  if(UI.view!=='club'||!club)return;const me=myP();if(!me)return;
+  if(UI.view!=='club'||!club)return;const me=myP();if(!me)return;checkInvites(me);
   // 申請者：房主同意 → 自動進房；拒絕 → 提示
   if(!UI.pendRoom){const pr=openRooms().find(x=>isPend(x,me.id));if(pr)UI.pendRoom=pr.id}
   if(UI.pendRoom){const pr=sessById(UI.pendRoom);
@@ -1126,16 +1142,20 @@ document.addEventListener('click',async e=>{
       toast(r.status==='live'?nm(id)+' 已加入；按房主設定的「重排」把他排進場次':nm(id)+' 已加入房間');return}
     case 'rReject':{const r=room();if(!r)return;t.disabled=true;await rpc('room_reject',{sid:r.id,p_pid:id});await loadClub();toast('已拒絕 '+nm(id));return}
     case 'addAsk':{const r=room();if(!r)return;const inr=new Set(r.present||[]);
-      const cand=players.filter(x=>x.user_id&&!x.hidden&&!inr.has(x.id)).sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'));
-      modal(`<h3>直接把人加進房間</h3><p class="mute" style="margin-top:0">可以一次勾選多人。對方不用在線上，下次打開 App 就會在房間裡。</p>
+      const inv=new Set(r.invited||[]),cand=players.filter(x=>x.user_id&&!x.hidden&&!inr.has(x.id)&&!inv.has(x.id)).sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'));
+      modal(`<h3>邀請球友進房間</h3><p class="mute" style="margin-top:0">可以一次勾選多人。對方的畫面會立刻跳出邀請，按「接受」就進房；沒開 App 的人，下次打開就會看到。</p>
         <input type="search" id="addq" placeholder="搜尋名字" oninput="document.querySelectorAll('#addl .item').forEach(e=>e.style.display=e.dataset.n.includes(this.value.trim().toLowerCase())?'':'none')">
-        <div id="addl" style="margin-top:8px">${cand.map(x=>`<div class="item addrow" data-act="addPick" data-id="${x.id}" role="checkbox" aria-checked="false" tabindex="0" data-n="${esc(x.name.toLowerCase())}">${headImg(x.id,'s')}<div class="grow"><b>${esc(x.name)}</b>${isPend(r,x.id)?'<small>正在申請</small>':''}</div><span class="addck" aria-hidden="true"></span></div>`).join('')||'<p class="empty">球團裡的人都已經在房間了</p>'}</div>
-        ${cand.length?`<button class="btn pri wide" id="addGo" data-act="addMulti" disabled style="margin-top:12px">勾選要加入的人</button>`:''}
+        <div id="addl" style="margin-top:8px">${cand.map(x=>`<div class="item addrow" data-act="addPick" data-id="${x.id}" role="checkbox" aria-checked="false" tabindex="0" data-n="${esc(x.name.toLowerCase())}">${headImg(x.id,'s')}<div class="grow"><b>${esc(x.name)}</b>${isPend(r,x.id)?'<small>正在申請（會直接進房）</small>':''}</div><span class="addck" aria-hidden="true"></span></div>`).join('')||'<p class="empty">球團裡的人都已經在房間了</p>'}</div>
+        ${cand.length?`<button class="btn pri wide" id="addGo" data-act="addMulti" disabled style="margin-top:12px">勾選要邀請的人</button>`:''}
         <button class="btn wide ghost" data-act="close" style="margin-top:8px">關閉</button>`);return}
-    case 'addPick':{t.classList.toggle('on');t.setAttribute('aria-checked',t.classList.contains('on'));const n=document.querySelectorAll('#addl .item.on').length,g=$('#addGo');if(g){g.disabled=!n;g.textContent=n?`把 ${n} 人加進房間`:'勾選要加入的人'}return}
-    case 'addMulti':{const r=room();if(!r)return;const ids=[...document.querySelectorAll('#addl .item.on')].map(e=>e.dataset.id);if(!ids.length)return;t.disabled=true;t.textContent='加入中…';
-      let ok=0;for(const pid of ids){try{await rpc('room_admit',{sid:r.id,p_pid:pid});ok++}catch(e){toast(errMsg(e))}}
-      closeModal();await loadClub();toast(`已加入 ${ok} 人`);return}
+    case 'addPick':{t.classList.toggle('on');t.setAttribute('aria-checked',t.classList.contains('on'));const n=document.querySelectorAll('#addl .item.on').length,g=$('#addGo');if(g){g.disabled=!n;g.textContent=n?`邀請 ${n} 人`:'勾選要邀請的人'}return}
+    case 'addMulti':{const r=room();if(!r)return;const ids=[...document.querySelectorAll('#addl .item.on')].map(e=>e.dataset.id);if(!ids.length)return;t.disabled=true;t.textContent='送出邀請中…';
+      const n=await rpc('room_invite',{sid:r.id,p_pids:ids});closeModal();await loadClub();toast(`已邀請 ${n} 人，等對方接受`);return}
+    case 'uninvite':{const r=room();if(!r)return;(UI.invCancel=UI.invCancel||new Set()).add(id);await rpc('room_uninvite',{sid:r.id,p_pid:id});await loadClub();return}
+    case 'invYes':case 'invNo':{t.disabled=true;const ok=a==='invYes',x=sessById(id);UI.invOpen=null;closeModal();
+      const res=await rpc('room_invite_reply',{sid:id,ok});await loadClub();
+      if(ok&&res==='joined'){setRoom(id);UI.game=null;UI.detail=null;UI.person=null;UI.venue=null;UI.wasIn=id;go('games');render();toast('已加入「'+(x?roomName(x):'房間')+'」')}
+      else if(ok)toast(res==='closed'?'這個房間已經關閉了':'邀請已經取消了');else toast('已婉拒邀請');return}
     case 'rleave':{t.disabled=true;UI.wasIn=null;await rpc('room_leave',{sid:id});UI.wasIn=null;await loadClub();toast('已離開房間');go('today');break}
     case 'ready':{const r=room();if(!r)return;await rpc('room_ready',{sid:r.id,val:v==='1'});await loadClub();return}
     case 'copyCode':{const x=sessById(id);copyText(x.code||'');return}
@@ -1250,7 +1270,7 @@ document.addEventListener('keydown',e=>{
   else if(id==='nick')goBtn('[data-act=saveNick]');else if(id==='xa'){e.preventDefault();$('#xb').focus()}else if(id==='xb')goBtn('[data-act=report]');
   else if(['rname','place','myname'].includes(id))e.target.blur();
 });
-$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal'&&!$('#mbox .inv-pop'))closeModal()});
 
 /* ---------- 啟動 ---------- */
 if(!SUPABASE_URL||!SUPABASE_KEY||!window.supabase){UI.view='setup';render()}
