@@ -196,7 +196,11 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.clubrow .clubgo{background:none;border:0;color:inherit;text-align:left;cursor:pointer;padding:0;font:inherit;display:flex;flex-direction:column;gap:2px}.clubrow .clubgo small{color:var(--mute)}.item[data-act]:active{background:rgba(253,224,71,.06)}.fol{color:var(--y);margin-right:4px}.btn.fol-on{color:var(--y);border-color:rgba(253,224,71,.5)}
+.item[data-act]{cursor:pointer}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
+.vn-art{height:92px;background:center/cover no-repeat}.vn-art.big{height:150px;border-radius:18px}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
+.vn-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}.vn-body b{font-size:15px;line-height:1.25}.vn-body small{color:var(--mute);font-size:12px}.vn-boss{font-size:13px;color:var(--y);font-weight:700}
+.vn-hero{margin:12px 0}.vn-hinfo h1{margin:12px 0 4px}.vn-bosscard{display:flex;gap:12px;align-items:center;margin-top:12px;padding:14px;border-radius:18px;border:1px solid rgba(253,224,71,.45);background:linear-gradient(120deg,rgba(253,224,71,.14),rgba(23,47,70,.6))}.vn-bosscard .grow{display:flex;flex-direction:column;gap:2px}.vn-bosscard b{font-size:18px}.vn-bosscard small{color:var(--mute)}
+.clubrow .clubgo{background:none;border:0;color:inherit;text-align:left;cursor:pointer;padding:0;font:inherit;display:flex;flex-direction:column;gap:2px}.clubrow .clubgo small{color:var(--mute)}.item[data-act]:active{background:rgba(253,224,71,.06)}.fol{color:var(--y);margin-right:4px}.btn.fol-on{color:var(--y);border-color:rgba(253,224,71,.5)}
 .me-card{position:relative;display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;margin:12px 0 14px;padding:14px 14px 52px;border-radius:20px;border:1px solid #466783;background:radial-gradient(120% 90% at 0% 0%,#2E5A80 0%,#172F46 60%,#0F2237 100%)}
 .me-fig{height:150px;position:relative}.me-card .me-fig .fig{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:100px;height:auto;margin:0;aspect-ratio:2/3}
 .me-info small{display:block;color:#B7CBE0;font-size:12px}.me-name{display:flex;align-items:center;gap:6px;font-size:18px;margin-bottom:6px}
@@ -545,6 +549,9 @@ function vCreate(){
   <div class="tog"><span>領先 2 分才算贏</span><button class="sw ${f.win2?'on':''}" data-act="fWin2" data-v="${f.win2?0:1}" role="switch" aria-checked="${!!f.win2}" aria-label="領先 2 分才算贏"></button></div>
   ${f.sport==='badminton'&&f.win2&&+f.target===21?'<p class="mute" style="font-size:13px;margin:0">羽球 30 分封頂：29:29 時下一分獲勝。</p>':''}
   ${f.sport==='pickleball'?`<label class="lb">計分制</label>${seg(f.serve||'rally','fServe',[['rally','落地得分'],['side','發球得分']])}`:''}
+  <label class="lb" for="venSel">在哪個道館打</label>
+  <select id="venSel"><option value="" ${f.venue?'':'selected'}>其他場地（不列入道館排行）</option>${[...new Set(VEN.map(v=>v.city))].map(c=>`<optgroup label="${esc(c)}">${VEN.filter(v=>v.city===c).map(v=>`<option value="${v.id}" ${f.venue===v.id?'selected':''}>${esc(v.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+  ${f.venue?'':`<input type="text" id="place" maxlength="40" value="${esc(f.place)}" placeholder="場地名稱（選填），例如：永康運動中心" style="margin-top:8px">`}
   <label class="lb" for="durSel">場地時間</label>
   <select id="durSel">${[60,90,120,150,180,240].map(m=>`<option value="${m}" ${(+f.dur||120)===m?'selected':''}>${m%60?(m/60).toFixed(1):m/60} 小時（${m} 分鐘）</option>`).join('')}</select>
   <p class="mute" style="font-size:13px;margin-top:8px">預估每場約 ${perGameMin(f)} 分鐘，${c} 面場地可打約 <b style="color:var(--y)">${n*c} 場</b>；開始後依實際人數排出對戰組合，晚到的人加入後可重排。</p>
@@ -554,7 +561,6 @@ function vCreate(){
     <label class="lb" for="rname">房間名稱</label><input type="text" id="rname" maxlength="24" placeholder="${esc(me?me.name:'')} 的房間" value="${esc(f.rname||'')}">
     <label class="lb">型式</label>${seg(f.mode,'fMode',[['doubles','雙打（輪換搭檔）'],['singles','單打']])}
     <label class="lb">場地數</label>${seg(f.courts,'fCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
-    <label class="lb" for="place">在哪裡打</label><input type="text" id="place" maxlength="40" value="${esc(f.place)}" placeholder="例如：永康運動中心">
   </details>
   <div class="foot"><button class="btn pri wide" data-act="createRoom">${cur?'建立房間（會離開目前的房間）':'建立房間'}</button></div>`;
 }
@@ -564,10 +570,12 @@ function vCreate(){
 
 /* ---------- 一人一個分數：所有球團的正式比賽一起算（帳號 id），再對應回本球團的球員 ---------- */
 const GROWS={};   // sport → rows {id,a:[uid],b:[uid],sa,sb,ended_at,created_at,status}
-async function loadGRows(){for(const sp of ['pickleball','badminton']){
+let VEN=[];
+async function loadGRows(){{const {data}=await sb.from('venues').select('*').eq('active',true).order('sort');VEN=data||[]}
+  for(const sp of ['pickleball','badminton']){
   const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});
   if(error){GROWS[sp]=null;continue}
-  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',sport:sp}))}
+  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',venue:r.venue||null,sport:sp}))}
   for(const k in EXC)delete EXC[k]}
 const uidOf=pid=>{const p=players.find(x=>x.id===pid);return p&&p.user_id};
 function ability(sport,onlySid,lam=3,o={}){
@@ -802,13 +810,39 @@ function globalList(sp,fr){const G=GL[sp];
   if(!list.length)return `<div class="card"><p class="empty">還沒有任何${SP[sp]}正式比賽。</p></div>`;
   return `<div class="card">${list.map((x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${folStar(x.uid)}${esc(x.name)}${x.uid===user.id?'（我）':''}</b><small>${x.g} 場${x.clubs?'・'+esc(x.clubs):''}</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span>${ring(x.rel,40)}</div>`).join('')}</div>`}
 
+/* ---------- 道館：場地排行（跨球團，同一個實力分數） ---------- */
+const VMIN=3,venById=id=>VEN.find(v=>v.id===id);
+function venueBoard(vid,sp){const G=GROWS[sp];if(!G)return null;const R=gAB(sp)||{},now=Date.now(),cnt={},last={};let games=0;
+  G.forEach(g=>{if(g.venue!==vid)return;games++;[...g.a,...g.b].forEach(u=>{cnt[u]=(cnt[u]||0)+1;last[u]=Math.max(last[u]||0,gTime(g))})});
+  const all=Object.keys(cnt).map(u=>({uid:u,n:cnt[u],last:last[u],r:R[u]?R[u].r:3}));
+  const ranked=all.filter(x=>x.n>=VMIN).sort((a,b)=>b.r-a.r),pend=all.filter(x=>x.n<VMIN).sort((a,b)=>b.n-a.n);
+  return {ranked,pend,games,boss:ranked.find(x=>now-x.last<90*864e5)||null}}
+const venArt=(v,cls='')=>v.art?`<div class="vn-art ${cls}" style="background-image:url(${esc(v.art)})"></div>`:`<div class="vn-art ph ${cls}" style="--h:${(avHash(v.id)%360)}"><span>${esc((v.name.match(/[\u4e00-\u9fff]/)||[v.name[0]])[0])}</span></div>`;
+function vVenues(sp){if(!VEN.length)return `<div class="card"><p class="empty">還沒有道館。</p></div>`;
+  return [...new Set(VEN.map(v=>v.city))].map(c=>`<h2>${esc(c)}</h2><div class="vn-grid">${VEN.filter(v=>v.city===c).map(v=>{const B=venueBoard(v.id,sp)||{ranked:[],boss:null,games:0};
+    if(B.boss)needPeople([B.boss.uid]);
+    return `<button class="vn-card" data-act="venue" data-id="${v.id}">${venArt(v)}<div class="vn-body"><b>${esc(v.name)}</b><small>${v.indoor?'室內':'室外'}${v.courts?`・${v.courts} 面`:''}</small>
+      <span class="vn-boss">${B.boss?`👑 館主 ${uName(B.boss.uid)}`:'館主從缺'}</span><small>${B.ranked.length} 人上榜・${B.games} 場</small></div></button>`}).join('')}</div>`).join('')}
+function vVenue(vid){const v=venById(vid);if(!v){UI.venue=null;return vRank()}
+  const sp=UI.rankSport,B=venueBoard(vid,sp)||{ranked:[],pend:[],games:0,boss:null};needPeople([...B.ranked,...B.pend].map(x=>x.uid));
+  const mi=B.ranked.findIndex(x=>x.uid===user.id),mp=B.pend.find(x=>x.uid===user.id);
+  const row=(x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${folStar(x.uid)}${uName(x.uid)}${x.uid===user.id?'（我）':''}${B.boss&&B.boss.uid===x.uid?' <span class="pill y">👑 館主</span>':''}</b><small>在這裡 ${x.n} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span></div>`;
+  return `<button class="btn sm ghost" data-act="venBack">‹ 道館</button>
+  <div class="vn-hero">${venArt(v,'big')}<div class="vn-hinfo"><h1>${esc(v.name)}</h1><p class="sub">${esc(v.city)}${v.address?'・'+esc(v.address):''}<br>${v.indoor?'室內':'室外'}${v.courts?`・${v.courts} 面場地`:''}</p></div></div>
+  ${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  <div class="vn-bosscard">${B.boss?`<img class="hd" src="${avRec(avOf(B.boss.uid).av).head}" alt=""><div class="grow"><small>👑 道館館主</small><b>${uName(B.boss.uid)}</b></div><span class="num" style="font-weight:800;font-size:22px;color:var(--y)">${B.boss.r.toFixed(3)}</span>`:`<div class="grow"><small>👑 道館館主</small><b>從缺</b><small>在這裡打滿 ${VMIN} 場、近 90 天有來打球，分數最高的人就是館主。</small></div>`}</div>
+  <p class="mute" style="margin:10px 0 0">${mi>=0?`你在這個道館排 <b style="color:var(--y)">第 ${mi+1} 名</b> / ${B.ranked.length} 人`:mp?`你在這裡打了 ${mp.n} 場，再打 <b style="color:var(--y)">${VMIN-mp.n} 場</b>就能上榜`:`你還沒在這個道館打過${SP[sp]}，開房時選「${esc(v.name)}」就會算進來。`}</p>
+  <h2>道館排行</h2><div class="card">${B.ranked.length?B.ranked.map(row).join(''):`<p class="empty">還沒有人在這裡打滿 ${VMIN} 場。</p>`}</div>
+  ${B.pend.length?`<h2>還差幾場上榜</h2><div class="card">${B.pend.map(x=>`<div class="item" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${uName(x.uid)}${x.uid===user.id?'（我）':''}</b><small>在這裡 ${x.n} 場，還差 ${VMIN-x.n} 場</small></div></div>`).join('')}</div>`:''}
+  <p class="mute" style="font-size:13px">排名用的是同一個實力分數（在哪裡打都一起算）；只是限定「在這個道館打滿 ${VMIN} 場正式比賽」的人來排。開房時選了這個道館的比賽才會算進來。</p>`}
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
   const sc=UI.rankScope||'club',all=sc==='all',fr=sc==='fr';
-  if(fr){const n=[...FOL].length;return `<h1>天梯排行</h1><p class="sub">好友・追蹤中 ${n} 人</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  if(sc==='ven')return `<h1>天梯排行</h1><p class="sub">道館・在哪裡打都是同一個分數</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}${vVenues(sp)}`;
+  if(fr){const n=[...FOL].length;return `<h1>天梯排行</h1><p class="sub">好友・追蹤中 ${n} 人</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
     <h2>好友排名</h2>${globalList(sp,true)}<p class="mute" style="font-size:13px">只列出你追蹤的人和你自己（有${SP[sp]}正式比賽的才會出現）。點名字可以看他的對戰紀錄。</p>`}
-  return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
   ${all?`<h2>全部球團排名</h2>${globalList(sp)}<p class="mute" style="font-size:13px">每個人只有一個實力分數：在任何球團打的正式比賽都會一起算。「本球團」只是把同一個分數、限定成本球團的成員來排。</p>`:`
   <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}" ${p.user_id?`data-act="person" data-id="${p.user_id}" role="button" tabindex="0"`:''}><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${folStar(p.user_id)}${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
@@ -919,7 +953,7 @@ function relU(uid,sp){const G=GROWS[sp];if(!G||!uid)return 0;const ex=exclSet(sp
 const folStar=u=>FOL.has(u)?'<span class="fol" aria-label="追蹤中">★</span>':'';
 function vPerson(uid){
   const sp=UI.rankSport,self=uid===user.id,R=gAB(sp),cur=R&&R[uid],L=userGlobal(sp,uid);
-  if(!L)return `<button class="btn sm ghost" data-act="pBack">‹ 天梯排行</button><div class="card" style="margin-top:10px"><p class="empty">載入中…</p></div>`;
+  const bk=UI.venue&&venById(UI.venue)?'‹ '+esc(venById(UI.venue).name):'‹ 天梯排行';if(!L)return `<button class="btn sm ghost" data-act="pBack">${bk}</button><div class="card" style="margin-top:10px"><p class="empty">載入中…</p></div>`;
   const S=gStats(L,uid,cur?cur.r:null),rel=relU(uid,sp),f3=x=>x==null?'—':x.toFixed(3),n=10;
   needPeople([uid,...L.slice(0,n).flatMap(x=>[...x.g.a,...x.g.b])]);
   const tile=(v,l)=>`<div class="pf-tile"><b>${v}</b><span>${l}</span></div>`;
@@ -928,7 +962,7 @@ function vPerson(uid){
   const h={tw:0,tl:0,vw:0,vl:0};if(!self)L.forEach(x=>{const g=x.g,ua=g.a.includes(uid),ia=g.a.includes(user.id),ib=g.b.includes(user.id);if(!ia&&!ib)return;
     const iWon=ia?g.sa>g.sb:g.sb>g.sa;if(ia===ua)iWon?h.tw++:h.tl++;else iWon?h.vw++:h.vl++});
   const hN=h.tw+h.tl+h.vw+h.vl,nm2=uName(uid);
-  return `<button class="btn sm ghost" data-act="pBack">‹ 天梯排行</button>
+  return `<button class="btn sm ghost" data-act="pBack">${bk}</button>
   <h1 style="margin-top:10px">${nm2}${self?'（我）':''}</h1><p class="sub">個人數據・${S.clubs>1?`合計 ${S.clubs} 個球團`:L.length?esc(L[0].g.club||''):'所有球團'}</p>
   <div class="me-card"><div class="me-fig">${figure(avOf(uid),sp)}</div>
     <div class="me-info"><b class="me-name">${nm2}</b>
@@ -1025,7 +1059,7 @@ function render(){
   checkKicked();
   const v=UI.view;let html;
   if(v==='setup')html=vSetup();else if(v==='login')html=vLogin();else if(v==='nick')html=vNick();else if(v==='clubs')html=vClubs();
-  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:()=>UI.person?vPerson(UI.person):vRank(),records:vRecords,members:vMembers,avatar:()=>UI.avEdit?vAvatar():vMe()}[UI.tab]||vToday)()}
+  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:()=>UI.person?vPerson(UI.person):UI.venue?vVenue(UI.venue):vRank(),records:vRecords,members:vMembers,avatar:()=>UI.avEdit?vAvatar():vMe()}[UI.tab]||vToday)()}
   else html=`<div class="empty">載入中…</div>`;
   $('#view').innerHTML=html;
   const inClub=v==='club'&&club;document.body.classList.toggle('nonav',!inClub);
@@ -1047,7 +1081,7 @@ const newCode=()=>'PS'+String(Math.floor(1000+Math.random()*9000));
 
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
-  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.person=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar'){UI.avd=null;UI.avEdit=false}ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
+  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.person=null;UI.venue=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar'){UI.avd=null;UI.avEdit=false}ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
   const a=t.dataset.act,id=t.dataset.id,v=t.dataset.v,s=live();
   try{switch(a){
     case 'close':closeModal();return;
@@ -1076,7 +1110,7 @@ document.addEventListener('click',async e=>{
       const cfg={mode:f.mode,courts:+f.courts||1,target:+f.target,score:f.score||'final',win2:!!f.win2,dur:+f.dur||120,games:+f.games||0,serve:f.sport==='pickleball'?(f.serve||'rally'):'rally'};
       if(f.sport==='badminton'&&cfg.win2&&cfg.target===21)cfg.cap=30;
       let data=null,error=null;
-      for(let i=0;i<5;i++){({data,error}=await sb.from('sessions').insert({club_id:club.id,sport:f.sport,cfg,place:f.place||null,name:(f.rname||'').trim()||null,status:'lobby',present:[],code:newCode()}).select().single());if(!error||error.code!=='23505')break}
+      for(let i=0;i<5;i++){({data,error}=await sb.from('sessions').insert({club_id:club.id,sport:f.sport,cfg,venue_id:venById(f.venue)?f.venue:null,place:venById(f.venue)?venById(f.venue).name:(f.place||null),name:(f.rname||'').trim()||null,status:'lobby',present:[],code:newCode()}).select().single());if(!error||error.code!=='23505')break}
       if(error){toast(errMsg(error));t.disabled=false;return}
       await rpc('room_join',{sid:data.id});setRoom(data.id);go('games');await loadClub();toast('房間開好了！代碼 '+data.code);return}
     /* 加入房間 */
@@ -1147,6 +1181,8 @@ document.addEventListener('click',async e=>{
     case 'rscope':UI.rankScope=v;break;
     case 'person':UI.person=id;UI.pMore=false;scrollTo(0,0);break;
     case 'pBack':UI.person=null;break;
+    case 'venue':UI.venue=id;scrollTo(0,0);break;
+    case 'venBack':UI.venue=null;break;
     case 'pMore':UI.pMore=true;break;
     case 'follow':{t.disabled=true;const {error}=await sb.from('follows').insert({followee:id});if(error&&error.code!=='23505'){toast(errMsg(error));t.disabled=false;return}FOL.add(id);toast('已追蹤，會出現在「好友」排行');break}
     case 'unfollow':{t.disabled=true;const {error}=await sb.from('follows').delete().eq('follower',user.id).eq('followee',id);if(error){toast(errMsg(error));t.disabled=false;return}FOL.delete(id);toast('已取消追蹤');break}
@@ -1154,7 +1190,7 @@ document.addEventListener('click',async e=>{
     case 'meSp':UI.meSport=v;break;
     case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
     case 'avEditOff':UI.avEdit=false;break;
-    case 'tabRank':UI.tab='rank';UI.person=null;UI.rankSport=UI.meSport||UI.form.sport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
+    case 'tabRank':UI.tab='rank';UI.person=null;UI.venue=null;UI.rankSport=UI.meSport||UI.form.sport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
     case 'tabRecords':UI.tab='records';UI.detail=null;ls.set('pbc-tab','records');scrollTo(0,0);break;
     case 'recF':UI.recSport=v;break;
     case 'detail':UI.detail=id;scrollTo(0,0);break;
@@ -1187,12 +1223,12 @@ document.addEventListener('click',async e=>{
   }}catch(err){toast(errMsg(err));t.disabled=false;return}
   render();
 });
-function readCreate(){const f=UI.form,g=k=>$('#'+k);if(g('rname'))f.rname=g('rname').value;if(g('place'))f.place=g('place').value.trim();
+function readCreate(){const f=UI.form,g=k=>$('#'+k);if(g('venSel'))f.venue=g('venSel').value;if(g('rname'))f.rname=g('rname').value;if(g('place'))f.place=g('place').value.trim();
   if(g('tgtSel'))f.target=+g('tgtSel').value;if(g('durSel'))f.dur=+g('durSel').value;if(g('gamesSel'))f.games=+g('gamesSel').value;const d=$('details.more');UI.more=!!(d&&d.open)}
 document.addEventListener('change',e=>{
   const tg=e.target;
   if(tg.id==='rGamesSel'){const r=room();if(r&&isHost(r))saveSess(r,{cfg:Object.assign({},r.cfg,{games:+tg.value})});return}
-  if(['tgtSel','durSel','gamesSel','rname','place'].includes(tg.id)){readCreate();saveForm();if(tg.tagName==='SELECT')setTimeout(render,0)}
+  if(['tgtSel','durSel','gamesSel','rname','place','venSel'].includes(tg.id)){readCreate();saveForm();if(tg.tagName==='SELECT')setTimeout(render,0)}
 });
 document.addEventListener('toggle',e=>{if(e.target.matches&&e.target.matches('details.more'))UI.more=e.target.open},true);
 document.addEventListener('input',e=>{
