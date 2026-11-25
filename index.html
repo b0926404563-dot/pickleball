@@ -176,8 +176,7 @@ function ability(sport,onlySid,lam=3){
     const t=new Date(g.ended_at||s.started_at).getTime(),w=Math.pow(.5,Math.max(0,now-t)/864e5/90);
     rows.push({a:g.a,b:g.b,y:Math.log((g.sa+.5)/(g.sb+.5)),w});[...g.a,...g.b].forEach(id=>cnt[id]=(cnt[id]||0)+1)});
   const ids=Object.keys(cnt).filter(id=>P(id)),n=ids.length,ix={};if(!n)return{};ids.forEach((id,i)=>ix[id]=i);
-  const rated=players.filter(p=>Number(p[f])>0),base=rated.length?rated.reduce((s,p)=>s+Number(p[f]),0)/rated.length:3.5;
-  const b0=ids.map(id=>{const v=Number(P(id)[f]);return v>0?(v-base)/RK:0});
+  const base=3,b0=ids.map(()=>0);  // 每個人都從 3.000 起算
   const A=ids.map((_,i)=>ids.map((_,j)=>i===j?lam:0)),v=b0.map(x=>lam*x);
   rows.forEach(r=>{const xs=[...r.a.filter(id=>id in ix).map(id=>[ix[id],1]),...r.b.filter(id=>id in ix).map(id=>[ix[id],-1])];
     xs.forEach(([i,xi])=>{v[i]+=r.w*xi*r.y;xs.forEach(([j,xj])=>A[i][j]+=r.w*xi*xj)})});
@@ -186,8 +185,7 @@ function ability(sport,onlySid,lam=3){
   const s2=Math.max(.25,sw>1?rss/sw:.25),out={};
   ids.forEach((id,i)=>out[id]={b:beta[i],sd:Math.sqrt(Math.max(0,inv[i][i]*s2)),g:cnt[id],r:base+RK*beta[i]});return out;
 }
-function priorB(sport){const f=RS[sport],rated=players.filter(p=>Number(p[f])>0),base=rated.length?rated.reduce((s,p)=>s+Number(p[f]),0)/rated.length:3.5;
-  return id=>{const v=Number(P(id)&&P(id)[f]);return v>0?(v-base)/RK:0}}
+function priorB(){return()=>0}
 
 /* ---------- 排賽：出賽少的先上、上一輪休息的優先、避免重複搭檔/對手/同四人、兩隊實力接近 ---------- */
 function counts(s,gl){
@@ -308,7 +306,7 @@ function vLogin(){return `<div class="card hero">${courtSvg}<h2 style="font-size
 function vNick(){const def=(user&&user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name))||'';
   return `<div class="card"><h2>取一個暱稱</h2><p class="mute" style="margin-top:0">大家會在名單和排名上看到這個名字，不能跟別人重複，之後也可以改。</p>
   <div class="field"><label for="nick">暱稱</label><input type="text" id="nick" maxlength="20" value="${esc(profile&&profile.nickname||def)}" placeholder="例如 EricKuo"></div>
-  ${rateFields(profile)}
+  <p class="mute">匹克球和羽球的分數，大家都從 3.000 開始。</p>
   <button class="btn big pri" data-act="saveNick">完成</button></div>
   <button class="btn big" data-act="logout">登出</button>`}
 function vClubs(){return `<div class="card"><div class="hrow"><h2>我的俱樂部</h2><span class="mute">${esc(profile.nickname)}</span></div>
@@ -402,7 +400,7 @@ function abilityCard(sport,sid,title){
   const sc=b=>{const p=1/(1+Math.exp(-b));return p>=.5?'11:'+Math.round(11*(1-p)/p):Math.round(11*p/(1-p))+':11'};
   return `<div class="card"><h2>${title}</h2><table><thead><tr><th></th><th>球友</th><th>分數</th><th>對平均</th><th>場</th><th>可信度</th></tr></thead><tbody>
     ${arr.map((v,i)=>`<tr class="r${i+1} ${meRow(v.id)}"><td><span class="rk">${i+1}</span></td><td>${nm(v.id)}</td><td class="num ${v.b>.005?'pos':v.b<-.005?'neg':''}">${v.r.toFixed(3)}</td><td class="num">${sc(v.b)}</td><td class="num">${v.g}</td><td>${rel(v)}</td></tr>`).join('')}</tbody></table>
-    <p class="mute" style="margin-bottom:0">同時校正隊友和對手的強弱：強隊對弱隊只贏一點點會扣分，弱隊輸強隊輸得少反而加分。分數仿 DUPR 尺度，從各自填的起始分數（沒填就從平均）出發；「對平均」是搭一位平均球友、對上兩位平均球友時的預估比分。可信度「參考」代表場次還少。</p></div>`;
+    <p class="mute" style="margin-bottom:0">同時校正隊友和對手的強弱：強隊對弱隊只贏一點點會扣分，弱隊輸強隊輸得少反而加分。分數仿 DUPR 尺度，每個人都從 3.000 起算；「對平均」是搭一位平均球友、對上兩位平均球友時的預估比分。可信度「參考」代表場次還少。</p></div>`;
 }
 function winCard(gl,title){
   const st=statsOf(gl);if(!st.length)return '';
@@ -411,13 +409,13 @@ function winCard(gl,title){
 }
 function dualCard(){
   const A={pickleball:ability('pickleball'),badminton:ability('badminton')};
-  const rows=players.filter(p=>!p.hidden&&(A.pickleball[p.id]||A.badminton[p.id]||Number(p.dupr)>0||Number(p.bdupr)>0));
+  const rows=players.filter(p=>!p.hidden&&(A.pickleball[p.id]||A.badminton[p.id]));
   if(!rows.length)return '';
-  const cell=(p,k)=>{const a=A[k][p.id],v=Number(p[RS[k]]);return a?`<b>${a.r.toFixed(3)}</b><br><span class="mute" style="font-size:12px">${a.g} 場</span>`:v>0?`${v.toFixed(3)}<br><span class="mute" style="font-size:12px">自填</span>`:'<span class="mute">—</span>'};
-  const key=p=>{const a=A.pickleball[p.id];return a?a.r:(Number(p.dupr)||0)};
+  const cell=(p,k)=>{const a=A[k][p.id];return a?`<b>${a.r.toFixed(3)}</b><br><span class="mute" style="font-size:12px">${a.g} 場</span>`:'<span class="mute">3.000</span>'};
+  const key=p=>{const a=A.pickleball[p.id];return a?a.r:3};
   return `<div class="card"><h2>雙項分數</h2><table class="l1"><thead><tr><th>球友</th><th>匹克球</th><th>羽球</th></tr></thead><tbody>
     ${rows.sort((x,y)=>key(y)-key(x)).map(p=>`<tr class="${meRow(p.id)}"><td>${esc(p.name)}</td><td class="num">${cell(p,'pickleball')}</td><td class="num">${cell(p,'badminton')}</td></tr>`).join('')}</tbody></table>
-    <p class="mute" style="margin-bottom:0">兩種球各算各的，互不影響。這是俱樂部自己的分數，不是官方 DUPR。</p></div>`;
+    <p class="mute" style="margin-bottom:0">兩種球各算各的，互不影響，大家都從 3.000 開始。這是俱樂部自己的分數，不是官方 DUPR。</p></div>`;
 }
 function vRank(){
   const sw=`<div class="seg" style="margin-bottom:14px">${[['today',live()?'今天':'最近一次'],['career','生涯累計']].map(([v,l])=>`<button data-act="rv" data-v="${v}" class="${UI.rankView===v?'on':''}">${l}</button>`).join('')}</div>`;
@@ -463,12 +461,13 @@ function report(s){
 function vMembers(){
   const me=myP(),link=location.origin+location.pathname+'?join='+club.join_code;
   const roleOf=p=>{if(!p.user_id)return '<span class="tag g">臨時</span>';const m=members.find(x=>x.user_id===p.user_id);return m&&m.role==='owner'?'<span class="tag o">團長</span>':m&&m.role==='admin'?'<span class="tag">幹部</span>':''};
+  const AB={pickleball:ability('pickleball'),badminton:ability('badminton')};
   const list=players.slice().sort((a,b)=>(a.hidden-b.hidden)||(!a.user_id-!b.user_id)||a.name.localeCompare(b.name,'zh-Hant'));
   return `<div class="card"><h2>邀請朋友加入</h2><p class="mute" style="margin:0">把連結貼到 LINE 群組，朋友用 Google 登入後就會自動加入「${esc(club.name)}」。</p>
     <div class="link">${esc(link)}</div><div class="row"><button class="btn pri" data-act="copyLink">複製邀請連結</button><span class="mute">邀請碼 <b class="num" style="font-size:20px;letter-spacing:.06em">${esc(club.join_code)}</b></span></div></div>
-  ${me?`<div class="card"><h2>我在這裡的資料</h2><div class="field"><label for="myname">顯示名稱</label><input type="text" id="myname" maxlength="24" value="${esc(me.name)}"></div>${rateFields(me)}<button class="btn pri" data-act="saveMine">儲存</button></div>`:''}
+  ${me?`<div class="card"><h2>我在這裡的資料</h2><div class="field"><label for="myname">顯示名稱</label><input type="text" id="myname" maxlength="24" value="${esc(me.name)}"></div><button class="btn pri" data-act="saveMine">儲存</button></div>`:''}
   <div class="card"><div class="hrow"><h2>球員名單（${players.filter(p=>!p.hidden).length}）</h2></div>
-    ${list.map(p=>`<div class="plr" style="${p.hidden?'opacity:.5':''}"><div><b>${esc(p.name)}</b>${roleOf(p)}${p.hidden?'<span class="tag g">已隱藏</span>':''}<br><span class="mute">匹克球 ${Number(p.dupr)>0?Number(p.dupr).toFixed(3):'—'} · 羽球 ${Number(p.bdupr)>0?Number(p.bdupr).toFixed(3):'—'}</span></div>
+    ${list.map(p=>`<div class="plr" style="${p.hidden?'opacity:.5':''}"><div><b>${esc(p.name)}</b>${roleOf(p)}${p.hidden?'<span class="tag g">已隱藏</span>':''}<br><span class="mute">匹克球 ${AB.pickleball[p.id]?AB.pickleball[p.id].r.toFixed(3):'3.000'} · 羽球 ${AB.badminton[p.id]?AB.badminton[p.id].r.toFixed(3):'3.000'}</span></div>
       <div class="row" style="justify-content:flex-end">${!p.user_id&&me?`<button class="btn sm" data-act="claimAsk" data-id="${p.id}">這是我</button>`:''}${(isAdmin()||!p.user_id)&&p.id!==(me&&me.id)?`<button class="btn sm" data-act="pEdit" data-id="${p.id}">編輯</button>`:''}</div></div>`).join('')}
     <div class="row" style="margin-top:12px;flex-wrap:nowrap"><input type="text" id="guest" maxlength="24" placeholder="新增臨時球員"><button class="btn" data-act="addGuest">加入</button></div></div>
   <div class="row"><button class="btn" data-act="toClubs">切換俱樂部</button><button class="btn" data-act="editMe">我的帳號</button><button class="btn warn" data-act="logout">登出</button></div>`;
@@ -517,11 +516,11 @@ document.addEventListener('click',async e=>{
     case 'google':{const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname+location.search}});if(error)toast(errMsg(error));return}
     case 'logout':closeModal();if(chan){sb.removeChannel(chan);chan=null}club=null;await sb.auth.signOut();return;
     case 'saveNick':{const n=$('#nick').value.trim();if(!n){toast('請輸入暱稱');return}
-      const row={id:user.id,nickname:n,dupr:readRate('rd'),bdupr:readRate('rb')};
+      const row={id:user.id,nickname:n};
       const {data,error}=await sb.from('profiles').upsert(row).select().single();if(error){toast(errMsg(error));return}
       profile=data;closeModal();toast('已儲存');if(UI.view==='nick')return afterAuth();render();return}
-    case 'editMe':modal(`<h3>我的帳號</h3><div class="field"><label for="nick">暱稱</label><input type="text" id="nick" maxlength="20" value="${esc(profile.nickname)}"></div>${rateFields(profile)}
-      <p class="mute" style="margin-top:0">這裡是加入新俱樂部時的預設值；各俱樂部裡的顯示名稱與分數，在該俱樂部的「成員」頁修改。</p><div class="row"><button class="btn pri" data-act="saveNick">儲存</button><button class="btn" data-act="close">取消</button></div>`);return;
+    case 'editMe':modal(`<h3>我的帳號</h3><div class="field"><label for="nick">暱稱</label><input type="text" id="nick" maxlength="20" value="${esc(profile.nickname)}"></div>
+      <p class="mute" style="margin-top:0">這是加入新俱樂部時的預設名稱；在各俱樂部的顯示名稱，到該俱樂部的「成員」頁修改。</p><div class="row"><button class="btn pri" data-act="saveNick">儲存</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'toClubs':if(chan){sb.removeChannel(chan);chan=null}club=null;ls.set('pbc-club','');await loadClubs();UI.view='clubs';break;
     case 'openClub':return openClub(id);
     case 'join':{const c=$('#code').value.trim();if(!c)return;const cid=await rpc('join_club',{p_code:c});await loadClubs();toast('已加入');return openClub(cid)}
@@ -565,14 +564,14 @@ document.addEventListener('click',async e=>{
     case 'del':{closeModal();const {error}=await sb.from('sessions').delete().eq('id',id);if(error){toast(errMsg(error));return}UI.detail=null;await loadClub();toast('已刪除');return}
     case 'copyLink':copyText(location.origin+location.pathname+'?join='+club.join_code);return;
     case 'saveMine':{const me=myP();if(!me)return;const n=$('#myname').value.trim();if(!n){toast('名稱不能空白');return}
-      const patch={name:n,dupr:readRate('rd'),bdupr:readRate('rb')};const {error}=await sb.from('players').update(patch).eq('id',me.id);if(error){toast(errMsg(error));return}
+      const patch={name:n};const {error}=await sb.from('players').update(patch).eq('id',me.id);if(error){toast(errMsg(error));return}
       Object.assign(me,patch);toast('已儲存');break}
     case 'pEdit':{const p=P(id);if(!p)return;const m=p.user_id&&members.find(x=>x.user_id===p.user_id);
-      modal(`<h3>編輯球員</h3><div class="field"><label for="pn">名稱</label><input type="text" id="pn" maxlength="24" value="${esc(p.name)}"></div>${rateFields(p)}
+      modal(`<h3>編輯球員</h3><div class="field"><label for="pn">名稱</label><input type="text" id="pn" maxlength="24" value="${esc(p.name)}"></div>
         <div class="row"><button class="btn pri" data-act="pSave" data-id="${id}">儲存</button><button class="btn" data-act="pHide" data-id="${id}">${p.hidden?'取消隱藏':'從名單隱藏'}</button>
         ${role==='owner'&&m&&m.role!=='owner'?`<button class="btn" data-act="pRole" data-id="${id}">${m.role==='admin'?'取消幹部':'設為幹部'}</button>`:''}<button class="btn" data-act="close">取消</button></div>
         <p class="mute">隱藏不會刪掉戰績，只是開場時不顯示。</p>`);return}
-    case 'pSave':{const n=$('#pn').value.trim();if(!n)return;const patch={name:n,dupr:readRate('rd'),bdupr:readRate('rb')};
+    case 'pSave':{const n=$('#pn').value.trim();if(!n)return;const patch={name:n};
       const {error}=await sb.from('players').update(patch).eq('id',id);if(error){toast(errMsg(error));return}closeModal();await loadClub();toast('已儲存');return}
     case 'pHide':{const p=P(id);const {error}=await sb.from('players').update({hidden:!p.hidden}).eq('id',id);if(error){toast(errMsg(error));return}closeModal();await loadClub();return}
     case 'pRole':{const p=P(id),m=members.find(x=>x.user_id===p.user_id);const {error}=await sb.from('members').update({role:m.role==='admin'?'member':'admin'}).eq('club_id',club.id).eq('user_id',p.user_id);
