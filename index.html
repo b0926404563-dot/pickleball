@@ -186,6 +186,14 @@ body.nonav nav{display:none}
 .mr-p.is-self{color:#F8FAFC;font-weight:800;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .mr-score{display:flex;align-items:center;justify-content:flex-end;gap:4px;color:#B7CBE0;font:700 18px/22px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums}
 .team-won .mr-score{color:#F8FAFC;font-weight:800}.mr-win{font:700 11px/15px "PingFang TC","Noto Sans TC",sans-serif}
+.dl-head{display:grid;grid-template-columns:1fr 54px 58px 54px;gap:6px;font-size:12px;color:#B7CBE0;padding:0 0 4px;border-bottom:1px solid #466783}.dl-head span:not(:first-child){text-align:right}
+.dl-row{display:grid;grid-template-columns:auto 1fr 54px 58px 54px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(70,103,131,.5);font-variant-numeric:tabular-nums}
+.dl-row .grow{min-width:0}.dl-row small{display:block;color:#B7CBE0;font-size:11px}.dl-row.is-self b{text-decoration:underline;text-underline-offset:3px}
+.dl-b,.dl-a,.dl-d{text-align:right;font-weight:700}.dl-b{color:#B7CBE0}.dl-a{color:#F8FAFC}
+.dl-d{border-radius:8px;padding:2px 4px}.dl-d.up{color:#A1E8C6;background:#173D3A}.dl-d.down{color:#FFB5AE;background:#502F3D}
+.dl-head{grid-template-columns:1fr 54px 58px 54px}
+.dl-why{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(253,224,71,.1);border:1px solid rgba(253,224,71,.35);color:#F8FAFC;font-size:14px;line-height:1.55}
+.mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 </style>
 </head>
 <body class="nonav">
@@ -270,9 +278,9 @@ function invert(M){const n=M.length,a=M.map((r,i)=>[...r,...r.map((_,j)=>i===j?1
     const d=a[c][c]||1e-9;for(let j=0;j<2*n;j++)a[c][j]/=d;
     for(let r=0;r<n;r++)if(r!==c){const f=a[r][c];if(f)for(let j=0;j<2*n;j++)a[r][j]-=f*a[c][j]}}
   return a.map(r=>r.slice(n))}
-function ability(sport,onlySid,lam=3){
-  const now=Date.now(),rows=[],cnt={},f=RS[sport];
-  games.forEach(g=>{if(g.status!=='confirmed'||g.a.length!==g.b.length)return;const s=sessById(g.session_id);if(!s||s.sport!==sport||(onlySid&&s.id!==onlySid))return;
+function ability(sport,onlySid,lam=3,o={}){
+  const now=o.now||Date.now(),rows=[],cnt={},f=RS[sport];
+  games.forEach(g=>{if(g.status!=='confirmed'||g.a.length!==g.b.length)return;if(o.filt&&!o.filt(g))return;const s=sessById(g.session_id);if(!s||s.sport!==sport||(onlySid&&s.id!==onlySid))return;
     const t=new Date(g.ended_at||s.started_at).getTime(),w=Math.pow(.5,Math.max(0,now-t)/864e5/90);
     rows.push({a:g.a,b:g.b,y:Math.log((g.sa+.5)/(g.sb+.5)),w});[...g.a,...g.b].forEach(id=>cnt[id]=(cnt[id]||0)+1)});
   const ids=Object.keys(cnt).filter(id=>P(id)),n=ids.length,ix={};if(!n)return{};ids.forEach((id,i)=>ix[id]=i);
@@ -347,7 +355,7 @@ async function loadClub(){
     const uids=[...new Set(members.map(m=>m.user_id))];
     if(uids.length){const {data:pf}=await sb.from('profiles').select('id,avatar').in('id',uids);(pf||[]).forEach(x=>{if(x.avatar&&Object.keys(x.avatar).length)avatars[x.id]=x.avatar})}
     if(profile&&profile.avatar&&Object.keys(profile.avatar).length)avatars[user.id]=profile.avatar;
-    await loadEvents();
+    await loadEvents();await loadSnaps();
     const m=members.find(x=>x.user_id===user.id);role=m?m.role:null;
     if(!m){toast('你已經不在這個俱樂部了');club=null;UI.view='clubs';await loadClubs()}
   }catch(e){toast(errMsg(e))}
@@ -527,6 +535,45 @@ function vCreate(){
   <div class="foot"><button class="btn pri wide" data-act="createRoom">${cur?'建立房間（會離開目前的房間）':'建立房間'}</button></div>`;
 }
 
+
+/* ---------- 每場比賽的分數變化（V004 rating_snaps） ---------- */
+let SN={};   // game_id → {player_id:{b,a}}
+const gTime=g=>{const s=sessById(g.session_id);return new Date(g.ended_at||(s&&s.started_at)||g.created_at).getTime()};
+// 用「這場之前的所有正式比賽」和「含這場」各算一次，差值就是這場的加減分
+function snapCalc(g){const s=sessById(g.session_id);if(!s||g.status!=='confirmed'||g.a.length!==g.b.length)return null;
+  const T=gTime(g),prior=x=>x.id!==g.id&&(gTime(x)<T||(gTime(x)===T&&String(x.created_at)<String(g.created_at)));
+  const B=ability(s.sport,null,3,{filt:prior,now:T}),A=ability(s.sport,null,3,{filt:x=>x.id===g.id||prior(x),now:T});
+  return [...g.a,...g.b].filter(P).map(pid=>({game_id:g.id,club_id:club.id,player_id:pid,before:+(B[pid]?B[pid].r:3).toFixed(3),after:+(A[pid]?A[pid].r:3).toFixed(3)}))}
+async function loadSnaps(){
+  const {data,error}=await sb.from('rating_snaps').select('game_id,player_id,before,after').eq('club_id',club.id);
+  if(error){SN={};return}SN={};(data||[]).forEach(r=>{(SN[r.game_id]=SN[r.game_id]||{})[r.player_id]={b:+r.before,a:+r.after}});
+  setTimeout(backfillSnaps,300)}
+let snapBusy=false;
+async function backfillSnaps(){if(snapBusy||!club)return;snapBusy=true;
+  try{const miss=games.filter(g=>g.status==='confirmed'&&!SN[g.id]).sort((x,y)=>gTime(x)-gTime(y)).slice(0,40);
+    const rows=[];miss.forEach(g=>{const r=snapCalc(g);if(r)rows.push(...r)});
+    if(rows.length){const {error}=await sb.from('rating_snaps').upsert(rows,{onConflict:'game_id,player_id',ignoreDuplicates:true});
+      if(!error){rows.forEach(r=>{(SN[r.game_id]=SN[r.game_id]||{})[r.player_id]={b:r.before,a:r.after}});render()}}}
+  finally{snapBusy=false}}
+async function saveSnap(gid){const g=games.find(x=>x.id===gid),rows=g&&snapCalc(g);if(!rows||!rows.length)return;
+  const {error}=await sb.from('rating_snaps').upsert(rows,{onConflict:'game_id,player_id'});
+  if(!error)rows.forEach(r=>{(SN[r.game_id]=SN[r.game_id]||{})[r.player_id]={b:r.before,a:r.after}})}
+const fmtD=d=>(d>=0?'+':'−')+Math.abs(d).toFixed(3).replace(/^0/,'');
+// 賽前預估比分（由賽前分數換算）
+function expScore(g,s,sn){const tg=+(s.cfg&&s.cfg.target)||11,bt=pid=>((sn[pid]?sn[pid].b:3)-3)/RK;
+  const pred=g.a.reduce((t,p)=>t+bt(p),0)-g.b.reduce((t,p)=>t+bt(p),0),lo=Math.max(0,Math.round((tg+.5)*Math.exp(-Math.abs(pred))-.5));
+  return {pred,a:pred>=0?tg:lo,b:pred>=0?lo:tg}}
+function snapCard(g,s,mid){const sn=SN[g.id];if(g.status!=='confirmed')return '';
+  if(!sn)return `<h2>這場的分數變化</h2><div class="card"><p class="mute" style="margin:0">計算中…</p></div>`;
+  const e=expScore(g,s,sn),row=pid=>{const x=sn[pid];if(!x)return '';const d=x.a-x.b;
+    return `<div class="dl-row ${pid===mid?'is-self':''}">${headImg(pid,'s')}<div class="grow"><b>${nm(pid)}${pid===mid?'（我）':''}</b>${x.b===3&&!games.some(o=>o.id!==g.id&&o.status==='confirmed'&&[...o.a,...o.b].includes(pid)&&gTime(o)<gTime(g))?'<small>第一場</small>':''}</div>
+      <span class="dl-b">${x.b.toFixed(3)}</span><span class="dl-d ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span><span class="dl-a">${x.a.toFixed(3)}</span></div>`};
+  let why='';if(mid&&sn[mid]){const myA=g.a.includes(mid),exM=myA?e.a-e.b:e.b-e.a,acM=myA?g.sa-g.sb:g.sb-g.sa,d=sn[mid].a-sn[mid].b;
+    why=`<p class="dl-why">賽前預估 ${myA?e.a:e.b}：${myA?e.b:e.a}（${exM>0?'你們隊較強':exM<0?'對手較強':'實力相當'}），實際 ${myA?g.sa:g.sb}：${myA?g.sb:g.sa}，${acM>exM?'比預期打得好':acM<exM?'比預期差一點':'跟預期差不多'}，所以 ${d>=0.0005?'加 '+fmtD(d).slice(1):d<=-0.0005?'扣 '+fmtD(d).slice(1):'分數幾乎不變'}。</p>`}
+  return `<h2>這場的分數變化</h2><div class="card"><div class="dl-head"><span>A 隊</span><span>賽前</span><span>加減</span><span>賽後</span></div>${g.a.map(row).join('')}
+    <div class="dl-head" style="margin-top:6px"><span>B 隊</span><span></span><span></span><span></span></div>${g.b.map(row).join('')}
+    <p class="mute" style="font-size:13px;margin:10px 0 0">賽前預估比分 A ${e.a}：${e.b} B。打得比預估好就加分、比預估差就扣分；實力越接近，一場的影響越大。</p>${why}</div>`}
+
 /* ---------- 03 等待／04 比賽中 ---------- */
 const isPend=(s,pid)=>!!pid&&(s.pending||[]).includes(pid);
 const amHost=s=>!!(s&&user&&s.created_by===user.id);
@@ -627,6 +674,7 @@ function vGame(g,s){
     <div class="foot"><button class="btn pri wide" data-act="report" data-id="${g.id}">送出比分</button></div>`}
   const rep=g.reported_side,sideA=rep==='a'?'已送出':g.status==='confirmed'?'已確認':rep==='b'?'待確認':'—',sideB=rep==='b'?'已送出':g.status==='confirmed'?'已確認':rep==='a'?'待確認':'—';
   return head+`<div class="card">${matchRow(g,s,mid,`${g.sa}–${g.sb}`)}<div class="res">${g.sa>g.sb?'A':'B'} 隊獲勝</div></div>
+  ${snapCard(g,s,mid)}
   <h2>${g.status==='pending'?'送出後的對手確認':'已列入正式戰績'}</h2><div class="card">
     <div class="stline"><span class="bd2 a">A</span><b style="flex:1">A 隊</b><span class="pill ${sideA==='待確認'?'y':'ok'}">${sideA}</span></div>
     <div class="stline"><span class="bd2 b">B</span><b style="flex:1">B 隊</b><span class="pill ${sideB==='待確認'?'y':'ok'}">${sideB}</span></div>
@@ -674,7 +722,7 @@ function mrRow(g,s,mid){
   const iWon=mine&&ok&&(g.a.includes(mid)?aw:bw),iLost=mine&&ok&&!iWon&&(aw||bw),single=g.a.length===1;
   const team=(lab,ids,sc,won)=>`<div class="mr-team ${won?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(id=>`<span class="mr-p ${id===mid?'is-self':''}">${nm(id)}${id===mid?'（我）':''}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${won?'<span class="mr-win">勝</span>':''}<span>${sc==null?'—':sc}</span></span></div>`;
   return `<button class="mr-row ${mine?'is-mine':''} ${iWon?'is-win':''} ${iLost?'is-loss':''} ${ok?'':'is-pending'}" data-act="openGame" data-id="${g.id}">
-    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
+    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${mine&&ok&&SN[g.id]&&SN[g.id][mid]?(d=>`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`)(SN[g.id][mid].a-SN[g.id][mid].b):''}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
     ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,bw)}</button>`}
 function vDetail(s){
   const gl=gamesOf(s.id).filter(g=>g.status!=='open'),cf=gl.filter(g=>g.status==='confirmed'),st=statsOf(cf),AB=ability(s.sport,s.id);
@@ -861,7 +909,7 @@ document.addEventListener('click',async e=>{
     case 'report':{const x=parseInt($('#xa').value),y=parseInt($('#xb').value);
       if(isNaN(x)||isNaN(y)){toast('請填兩隊的分數');return}if(x===y){toast('比分不能平手');return}
       t.disabled=true;await rpc('report_score',{gid:id,x,y});UI.edit=null;UI.fill=null;toast(isAdmin()?'已送出':'已送出，等對手確認');await loadClub();await ensureRounds();return}
-    case 'confirm':{t.disabled=true;await rpc('confirm_score',{gid:id});await loadClub();
+    case 'confirm':{t.disabled=true;await rpc('confirm_score',{gid:id});await loadClub();await saveSnap(id);
       // 確認完自動回到房間（房間還開著、自己在房裡）
       const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id),me=myP();UI.edit=null;UI.fill=null;
       if(r&&r.status!=='done'&&me&&inRoom(r,me.id)){UI.game=null;setRoom(r.id);go('games');render();toast('已確認，回到房間')}
