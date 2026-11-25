@@ -8,8 +8,8 @@
 <style>
   :root{--bg:#080F1C;--card:#172F46;--line:#466783;--t:#F8FAFC;--m:#B7CBE0;--y:#FDE047}
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--t);font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}
-  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line);background:#102A43}
+  html,body{margin:0;background:var(--bg);color:var(--t);font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line);background:#102A43}
   header b{color:var(--y);font-size:16px}
   header .m{color:var(--m);font-size:13px}
   input{background:#0b1a2c;border:1px solid var(--line);color:var(--t);border-radius:8px;padding:7px 10px;font-size:14px;width:150px}
@@ -17,7 +17,7 @@
   button.g{background:transparent;color:var(--t);border:1px solid var(--line)}
   select{background:#0b1a2c;color:var(--t);border:1px solid var(--line);border-radius:8px;padding:6px}
   #grid{display:grid;padding:6px;justify-content:center}
-  .cell{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
+  .cell{position:relative;align-self:start;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
   .cell.on{border-color:var(--y)}
   .tag{position:absolute;left:0;top:0;z-index:2;background:rgba(8,15,28,.85);color:var(--y);font-size:12px;font-weight:700;padding:2px 7px;border-bottom-right-radius:8px;pointer-events:none}
   .cell iframe{border:0;transform-origin:0 0;display:block;background:#102A43}
@@ -48,17 +48,30 @@ for (let i = 1; i <= N; i++) {
   c.appendChild(f); grid.appendChild(c); frames.push(f);
   c.addEventListener('pointerdown', () => { document.querySelectorAll('.cell').forEach(x => x.classList.remove('on')); c.classList.add('on'); });
 }
+let SC = 0.5;
 function fit() {
-  const cols = +document.getElementById('cols').value, rows = Math.ceil(N / cols), gap = 6;
-  const availW = innerWidth - 12 - gap * (cols - 1), availH = innerHeight - document.querySelector('header').offsetHeight - 12 - gap * (rows - 1);
-  const cw = Math.floor(availW / cols), ch = Math.floor(availH / rows);
-  const sc = Math.min(1.2, cw / W);                       // 填滿寬度
-  const ih = Math.max(480, Math.floor(ch / sc));          // 高度不夠就在格子裡捲動
+  const cols = +document.getElementById('cols').value, gap = 6;
+  const cw = Math.floor((document.documentElement.clientWidth - 12 - gap * (cols - 1)) / cols);
+  SC = cw / W;                                            // 填滿寬度
   grid.style.gap = gap + 'px';
   grid.style.gridTemplateColumns = 'repeat(' + cols + ',' + cw + 'px)';
-  document.querySelectorAll('.cell').forEach(c => { c.style.width = cw + 'px'; c.style.height = Math.floor(ih * sc) + 'px'; });
-  frames.forEach(f => { f.height = ih; f.style.transform = 'scale(' + sc + ')'; });
+  document.querySelectorAll('.cell').forEach(c => c.style.width = cw + 'px');
+  frames.forEach(f => f.style.transform = 'scale(' + SC + ')');
+  grow();
 }
+// 每一格完整顯示：iframe 高度跟著內容長，不在格子裡捲動，整頁用右邊的卷軸
+function grow() {
+  frames.forEach(f => {
+    let h = H;
+    try { const d = f.contentDocument; if (d && d.body) h = Math.max(H, d.body.scrollHeight, d.documentElement.scrollHeight); } catch (e) {}
+    if (+f.dataset.h !== h) {
+      f.dataset.h = h; f.height = h;
+      try { f.contentDocument.documentElement.style.overflow = 'hidden'; } catch (e) {}
+    }
+    f.parentNode.style.height = Math.ceil(h * SC) + 'px';
+  });
+}
+setInterval(grow, 700);
 addEventListener('resize', fit); document.getElementById('cols').onchange = fit;
 try { const v = localStorage.getItem('ps-test-cols'); if (v) document.getElementById('cols').value = v; } catch (e) {}
 document.getElementById('cols').addEventListener('change', e => { try { localStorage.setItem('ps-test-cols', e.target.value); } catch (x) {} });
