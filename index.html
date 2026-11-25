@@ -379,7 +379,7 @@ const AVM={
       ['racket_01','金鷹','badminton'],['racket_02','碧波','badminton'],['racket_03','烈陽','badminton']]
      .map(([id,name,sport])=>({id,name,sport,grip:[256,636],path:`assets/paddles/${id}_v001.webp`}))};
 const avHash=str=>{let x=0;for(const c of String(str||''))x=(x*31+c.charCodeAt(0))>>>0;return x};
-function avOf(uid){const h=avHash(uid),d={av:AVM.av[h%6].id,pb:AVM.eq[(h>>3)%4].id,bd:AVM.eq[4+(h>>5)%3].id},a=(uid&&avatars[uid])||{};
+function avOf(uid){const h=avHash(uid),d={av:AVM.av[h%6].id,pb:AVM.eq[(h>>>3)%4].id,bd:AVM.eq[4+(h>>>5)%3].id},a=(uid&&avatars[uid])||{};
   const ok=(k,v)=>v&&(k==='av'?AVM.av:AVM.eq).some(x=>x.id===v);
   return {av:ok('av',a.av)?a.av:d.av,pb:ok('pb',a.pb)?a.pb:d.pb,bd:ok('bd',a.bd)?a.bd:d.bd}}
 const avP=pid=>{const p=P(pid);return avOf(p&&p.user_id||pid)};
