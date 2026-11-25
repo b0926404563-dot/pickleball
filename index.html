@@ -159,6 +159,28 @@ body.nonav nav{display:none}
 .pendbar{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(253,224,71,.14);border:1.5px solid var(--y);color:var(--y);font-size:17px;font-weight:800;text-align:center;letter-spacing:.5px}
 .item.mygame{box-shadow:inset 4px 0 0 var(--y)}
 .mine{color:var(--y);font-weight:800}
+/* V002 比賽紀錄列 */
+.mr-sum{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-top:14px;padding:10px 12px 10px 14px;background:linear-gradient(120deg,#294D69,#172F46);border:1px solid #466783;border-radius:14px}
+.mr-sum strong{font-size:19px}.mr-tot{display:flex;gap:10px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}.mr-tot .w{color:#A1E8C6}.mr-tot .l{color:#FFB5AE}
+.mr-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:20px 0 8px}.mr-head h2{margin:0;font-size:18px;line-height:25px}.mr-head span{font-size:12px}
+.mr-list{display:grid;gap:8px;margin-top:10px}
+.mr-row{display:block;width:100%;text-align:left;font:inherit;cursor:pointer;padding:8px 12px 9px;border:1px solid #466783;border-radius:16px;background:#142F47;color:#B7CBE0;min-height:44px}
+.mr-row.is-mine{background:linear-gradient(118deg,#294D69,#172F46);color:#F8FAFC}
+.mr-row:hover{border-color:#93AEC8}.mr-row:focus-visible{outline:2px solid #FFED91;outline-offset:2px}
+.mr-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:26px}
+.mr-id{font-size:12px;line-height:17px;color:#B7CBE0;font-weight:500;white-space:nowrap}
+.mr-tags{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:6px;min-width:0}
+.mr-status{font-size:12px;line-height:17px;color:#B7CBE0}
+.mr-pend,.mr-res{display:inline-flex;align-items:center;justify-content:center;border-radius:8px;min-height:24px;padding:2px 7px;white-space:nowrap}
+.mr-pend{background:#433B24;color:#FFED91;font-weight:700;font-size:12px}
+.mr-res{min-width:30px;font-size:14px;line-height:18px;font-weight:800}.mr-row.is-win .mr-res{color:#A1E8C6;background:#173D3A}.mr-row.is-loss .mr-res{color:#FFB5AE;background:#502F3D}
+.mr-team{display:grid;grid-template-columns:18px minmax(0,1fr) minmax(50px,auto);align-items:center;gap:6px;padding:2px 0;min-height:27px}
+.mr-team+.mr-team{border-top:1px solid #466783}
+.mr-tid{font-size:12px;line-height:17px;font-weight:600;color:#B7CBE0}
+.mr-players{font-size:14px;line-height:20px;font-weight:500;display:flex;flex-wrap:wrap;min-width:0;gap:0 4px;overflow-wrap:anywhere}
+.mr-p.is-self{color:#F8FAFC;font-weight:800;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.mr-score{display:flex;align-items:center;justify-content:flex-end;gap:4px;color:#B7CBE0;font:700 18px/22px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.team-won .mr-score{color:#F8FAFC;font-weight:800}.mr-win{font:700 11px/15px "PingFang TC","Noto Sans TC",sans-serif}
 </style>
 </head>
 <body class="nonav">
@@ -564,7 +586,7 @@ function vPlay(s){
   <h2>賽程（還有 ${q.length} 場）</h2><div class="card">${q.length?q.map(g=>`<div class="item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div>${g===rec?'<span class="pill y">建議</span>':''}${startBtn(g)}</div>`).join('')
     :`<p class="empty">預排的場次打完了</p>${host?'<button class="btn wide" data-act="addRound">再排一輪</button>':''}`}</div>
   <h2>候場</h2><div class="card">${waitIds.length?`<div class="row">${waitIds.map(id=>`<span class="pill">${nm(id)}</span>`).join('')}</div>`:'<p class="empty" style="padding:6px">目前無候場球員</p>'}</div>
-  ${done.length?`<h2>已打完（${done.length}）</h2><div class="card">${done.map(g=>`<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openGame" data-id="${g.id}"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)} vs ${teamNames(g.b,mid)}</b><small>${g.status==='pending'?'待確認':'已確認'}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span></button>`).join('')}</div>`:''}
+  ${done.length?`<h2>已打完（${done.length}）</h2><div class="mr-list">${done.map(g=>mrRow(g,s,mid)).join('')}</div>`:''}
   <div class="row2" style="margin-top:14px">${me?(inR?`<button class="btn ghost" data-act="rleave" data-id="${s.id}">我先離開</button>`:joinBtn(s,mid,' ')):''}<button class="btn" data-act="copyRoom" data-id="${s.id}">邀請球友</button></div>
   ${host?`<details class="more"><summary>房主設定</summary>
     <label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
@@ -641,14 +663,24 @@ function vRecords(){
   <h2>球團活動紀錄</h2><div class="card">${logs.length?logs.map(s=>{const gl=gamesOf(s.id).filter(g=>g.status!=='open');
     return `<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="detail" data-id="${s.id}"><div class="grow"><b>${esc(roomName(s))} ${sportPill(s)}${s.status==='live'?' <span class="pill live">進行中</span>':''}</b><small>${D(s.started_at)} ${HM(s.started_at)}${s.place?'・'+esc(s.place):''}・${(s.present||[]).length} 人・${gl.length} 場${(()=>{const m=(myP()||{}).id,n=gl.filter(g=>m&&[...g.a,...g.b].includes(m)).length;return n?`・<b style="color:var(--y)">我打了 ${n} 場</b>`:'・我沒參加'})()}</small></div><span class="mute">›</span></button>`}).join(''):'<p class="empty">還沒有活動紀錄</p>'}</div>`;
 }
+// V002 比賽紀錄列（GPT 設計稿 design/v002_match_row）
+function mrRow(g,s,mid){
+  const mine=!!mid&&[...g.a,...g.b].includes(mid),ok=g.status==='confirmed',aw=ok&&g.sa>g.sb,bw=ok&&g.sb>g.sa;
+  const iWon=mine&&ok&&(g.a.includes(mid)?aw:bw),iLost=mine&&ok&&!iWon&&(aw||bw),single=g.a.length===1;
+  const team=(lab,ids,sc,won)=>`<div class="mr-team ${won?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(id=>`<span class="mr-p ${id===mid?'is-self':''}">${nm(id)}${id===mid?'（我）':''}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${won?'<span class="mr-win">勝</span>':''}<span>${sc==null?'—':sc}</span></span></div>`;
+  return `<button class="mr-row ${mine?'is-mine':''} ${iWon?'is-win':''} ${iLost?'is-loss':''} ${ok?'':'is-pending'}" data-act="openGame" data-id="${g.id}">
+    <div class="mr-meta"><span class="mr-id">第 ${seqOf(g,s)} 場・${single?'單打':'雙打'}</span><span class="mr-tags">${ok?'<span class="mr-status">已確認</span>':'<span class="mr-pend" aria-label="待對手確認">待確認</span>'}${iWon?'<span class="mr-res" aria-label="我的結果：勝">勝</span>':iLost?'<span class="mr-res" aria-label="我的結果：敗">敗</span>':''}</span></div>
+    ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,bw)}</button>`}
 function vDetail(s){
   const gl=gamesOf(s.id).filter(g=>g.status!=='open'),cf=gl.filter(g=>g.status==='confirmed'),st=statsOf(cf),AB=ability(s.sport,s.id);
-  const mid=(myP()||{}).id,inG=g=>!!mid&&[...g.a,...g.b].includes(mid),mg=gl.filter(inG),myN=mg.length,myW=mg.filter(g=>(g.a.includes(mid))===(g.sa>g.sb)).length;
+  const mid=(myP()||{}).id,inG=g=>!!mid&&[...g.a,...g.b].includes(mid),mg=gl.filter(inG),myN=mg.length,mc=mg.filter(g=>g.status==='confirmed'),myC=mc.length,myW=mc.filter(g=>(g.a.includes(mid))===(g.sa>g.sb)).length;
   const shown=UI.detMine&&myN?mg:gl;
   return `<button class="btn sm ghost" data-act="back">‹ 所有紀錄</button>
   <h1 style="margin-top:10px">${esc(roomName(s))}</h1><p class="sub">${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}・${modeTxt(s)}・${ruleTxt(s)}${s.place?'・'+esc(s.place):''}</p>
-  ${myN?`<p style="margin:0 0 10px"><span class="pill y">我打了 ${myN} 場・${myW} 勝 ${myN-myW} 敗</span></p>${seg(UI.detMine?'mine':'all','detF',[['all','全部場次'],['mine','只看我打的']])}`:`<p class="mute" style="margin:0 0 10px">這次你沒有上場。</p>`}
-  <div class="card">${shown.length?shown.map(g=>{const im=inG(g),won=im&&((g.a.includes(mid))===(g.sa>g.sb));return `<button class="item ${im?'me mygame':''}" style="width:100%;background:${im?'':'none'};border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openGame" data-id="${g.id}"><div class="grow"><b>${teamNames(g.a,mid)} vs ${teamNames(g.b,mid)}</b><small>${g.status==='pending'?'待確認':'已確認'}${im?`・<span style="color:${won?'var(--ok)':'#ff8a8a'};font-weight:800">我${won?'贏':'輸'}</span>`:''}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span></button>`}).join(''):'<p class="empty">沒有比分</p>'}</div>
+  ${myN?`<div class="mr-sum"><span>我打了 <strong>${myC}</strong> 場</span><span class="mr-tot"><span class="w">${myW} 勝</span><span class="l">${myC-myW} 敗</span></span>${myN>myC?`<small class="mute" style="flex-basis:100%">另有 ${myN-myC} 場待確認</small>`:''}</div>`:`<p class="mute" style="margin:6px 0 0">這次你沒有上場。</p>`}
+  <div class="mr-head"><h2>比賽紀錄</h2><span class="mute">${UI.detMine&&myN?`其中 ${myN} 場有我`:`共 ${gl.length} 場`}</span></div>
+  ${myN?seg(UI.detMine?'mine':'all','detF',[['all','全部場次'],['mine','只看我打的']]):''}
+  <div class="mr-list">${shown.length?shown.slice().reverse().map(g=>mrRow(g,s,mid)).join(''):'<p class="empty">沒有比分</p>'}</div>
   ${st.length?`<h2>這次的表現</h2><div class="card"><table><thead><tr><th>球友</th><th class="num">勝-負</th><th class="num">分差</th><th class="num">實力</th></tr></thead><tbody>${st.map(x=>`<tr class="${meRow(x.id)}"><td>${nm(x.id)}${x.id===mid?'（我）':''}</td><td class="num">${x.w}-${x.l}</td><td class="num">${x.pf-x.pa>0?'+':''}${x.pf-x.pa}</td><td class="num">${AB[x.id]?AB[x.id].r.toFixed(3):'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
   <div class="stack">${cf.length?`<button class="btn wide" data-act="copy" data-id="${s.id}">複製戰績（貼到 LINE）</button>`:''}${isAdmin()?`<button class="btn warn wide" data-act="delAsk" data-id="${s.id}">刪除這次活動</button>`:''}</div>`;
 }
