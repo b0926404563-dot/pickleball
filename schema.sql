@@ -57,7 +57,8 @@ create table sessions(
   sport text not null default 'pickleball' check (sport in ('pickleball','badminton')),
   cfg jsonb not null default '{}'::jsonb,           -- {mode, courts, target}
   place text,
-  status text not null default 'live' check (status in ('live','done')),
+  name text,                                        -- 房間名稱
+  status text not null default 'lobby' check (status in ('lobby','live','done')),  -- 等待中/比賽中/結束
   present uuid[] not null default '{}',             -- 出席球員 id
   away uuid[] not null default '{}',                -- 先離場的球員 id
   started_at timestamptz not null default now(),
@@ -244,6 +245,45 @@ end $$;
 grant execute on function create_club(text), join_club(text), claim_player(uuid),
   report_score(uuid,int,int), confirm_score(uuid), is_member(uuid), is_admin(uuid) to authenticated;
 revoke execute on function my_side(games) from public, anon;
+
+-- ---------- 對戰房間 ----------
+create or replace function room_join(sid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; st text; pid uuid;
+begin
+  select club_id, status into cid, st from sessions where id = sid;
+  if cid is null or not is_member(cid) then raise exception '找不到這個房間'; end if;
+  if st = 'done' then raise exception '這個房間已經關閉了'; end if;
+  select id into pid from players where club_id = cid and user_id = auth.uid();
+  if pid is null then raise exception '你在這個俱樂部還沒有球員資料'; end if;
+  -- 一次只能待在一個房間：離開同俱樂部其他房間
+  update sessions set present = array_remove(present, pid)
+    where club_id = cid and id <> sid and status = 'lobby' and pid = any(present);
+  update sessions set away = array_append(coalesce(away,'{}'), pid)
+    where club_id = cid and id <> sid and status = 'live' and pid = any(present) and not (pid = any(coalesce(away,'{}')));
+  update sessions set
+    present = case when pid = any(present) then present else array_append(present, pid) end,
+    away = array_remove(coalesce(away,'{}'), pid)
+  where id = sid;
+end $$;
+
+create or replace function room_leave(sid uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare cid uuid; st text; pid uuid;
+begin
+  select club_id, status into cid, st from sessions where id = sid;
+  if cid is null or not is_member(cid) then raise exception '找不到這個房間'; end if;
+  select id into pid from players where club_id = cid and user_id = auth.uid();
+  if pid is null then return; end if;
+  if st = 'lobby' then
+    update sessions set present = array_remove(present, pid) where id = sid;
+  elsif st = 'live' then
+    update sessions set away = array_append(array_remove(coalesce(away,'{}'), pid), pid) where id = sid;
+  end if;
+end $$;
+
+grant execute on function room_join(uuid), room_leave(uuid) to authenticated;
+
 
 grant select, insert, update, delete on profiles, clubs, members, players, sessions, games to authenticated;
 
