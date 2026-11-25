@@ -294,7 +294,7 @@ function invert(M){const n=M.length,a=M.map((r,i)=>[...r,...r.map((_,j)=>i===j?1
     const d=a[c][c]||1e-9;for(let j=0;j<2*n;j++)a[c][j]/=d;
     for(let r=0;r<n;r++)if(r!==c){const f=a[r][c];if(f)for(let j=0;j<2*n;j++)a[r][j]-=f*a[c][j]}}
   return a.map(r=>r.slice(n))}
-function ability(sport,onlySid,lam=3,o={}){
+function abilityLocal(sport,onlySid,lam=3,o={}){
   const now=o.now||Date.now(),rows=[],cnt={},f=RS[sport];
   games.forEach(g=>{if(g.status!=='confirmed'||g.a.length!==g.b.length)return;if(o.filt&&!o.filt(g))return;if(!o.raw&&exclSet(sport).has(g.id))return;const s=sessById(g.session_id);if(!s||s.sport!==sport||(onlySid&&s.id!==onlySid))return;
     const t=new Date(g.ended_at||s.started_at).getTime(),w=Math.pow(.5,Math.max(0,now-t)/864e5/90);
@@ -371,7 +371,7 @@ async function loadClub(){
     const uids=[...new Set(members.map(m=>m.user_id))];
     if(uids.length){const {data:pf}=await sb.from('profiles').select('id,avatar').in('id',uids);(pf||[]).forEach(x=>{if(x.avatar&&Object.keys(x.avatar).length)avatars[x.id]=x.avatar})}
     if(profile&&profile.avatar&&Object.keys(profile.avatar).length)avatars[user.id]=profile.avatar;
-    await loadEvents();await loadSnaps();
+    await loadEvents();await loadGRows();await loadSnaps();
     const m=members.find(x=>x.user_id===user.id);role=m?m.role:null;
     if(!m){toast('你已經不在這個俱樂部了');club=null;UI.view='clubs';await loadClubs()}
   }catch(e){toast(errMsg(e))}
@@ -553,26 +553,45 @@ function vCreate(){
 
 
 
+
+/* ---------- 一人一個分數：所有球團的正式比賽一起算（帳號 id），再對應回本球團的球員 ---------- */
+const GROWS={};   // sport → rows {id,a:[uid],b:[uid],sa,sb,ended_at,created_at,status}
+async function loadGRows(){for(const sp of ['pickleball','badminton']){
+  const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});
+  if(error){GROWS[sp]=null;continue}
+  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed'}))}
+  for(const k in EXC)delete EXC[k]}
+const uidOf=pid=>{const p=players.find(x=>x.id===pid);return p&&p.user_id};
+function ability(sport,onlySid,lam=3,o={}){
+  const R=GROWS[sport];if(onlySid||!R)return abilityLocal(sport,onlySid,lam,o);
+  const now=o.now||Date.now(),cnt={},rows=[];
+  R.forEach(g=>{if(o.filt&&!o.filt(g))return;if(!o.raw&&exclSet(sport).has(g.id))return;rows.push(g);[...g.a,...g.b].forEach(u=>cnt[u]=(cnt[u]||0)+1)});
+  const res=fitRows(rows.map(g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:new Date(g.ended_at).getTime()})),now,lam),out={};
+  players.forEach(p=>{const u=p.user_id;if(u&&res[u])out[p.id]={b:(res[u].r-3)/RK,r:res[u].r,g:cnt[u],sd:.1}});return out}
+
 /* ---------- DUPR 新規則（2026）：賽前兩隊平均差 ≥ 0.5 且強隊贏 → 這場不計分；爆冷照算 ---------- */
 const GAP=0.5,EXC={};
 const gOrder=(x,y)=>gTime(x)-gTime(y)||String(x.created_at).localeCompare(String(y.created_at));
 function exclSet(sport){
-  const gl=games.filter(g=>g.status==='confirmed'&&g.a.length===g.b.length&&(sessById(g.session_id)||{}).sport===sport).sort(gOrder);
-  const key=gl.map(g=>g.id+g.sa+'-'+g.sb+(g.ended_at||'')).join('|');
+  const G=GROWS[sport],gl=(G?G.slice():games.filter(g=>g.status==='confirmed'&&g.a.length===g.b.length&&(sessById(g.session_id)||{}).sport===sport)).sort(gOrder);
+  const key=(G?'G':'L')+gl.map(g=>g.id+g.sa+'-'+g.sb+(g.ended_at||'')).join('|');
   if(EXC[sport]&&EXC[sport].key===key)return EXC[sport].set;
-  const set=new Set(),info={},done=[];
-  gl.forEach(g=>{const ids=new Set(done),R=ability(sport,null,3,{raw:true,filt:x=>ids.has(x.id),now:gTime(g)});
-    const av=t=>t.reduce((s,p)=>s+(R[p]?R[p].r:3),0)/t.length,ga=av(g.a),gb=av(g.b),gap=Math.abs(ga-gb),favA=ga>gb,aWon=g.sa>g.sb;
+  const set=new Set(),info={},kept=[];
+  const toR=g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:gTime(g)});
+  gl.forEach(g=>{let rk;
+    if(G){const R=fitRows(kept.map(toR),gTime(g));rk=u=>R[u]?R[u].r:3}
+    else{const ids=new Set(kept.map(x=>x.id)),R=abilityLocal(sport,null,3,{raw:true,filt:x=>ids.has(x.id),now:gTime(g)});rk=p=>R[p]?R[p].r:3}
+    const av=t=>t.reduce((s,p)=>s+rk(p),0)/t.length,ga=av(g.a),gb=av(g.b),gap=Math.abs(ga-gb),favA=ga>gb,aWon=g.sa>g.sb;
     info[g.id]={gap,fav:favA?'a':'b',ga,gb};
-    if(gap>=GAP&&favA===aWon)set.add(g.id);else done.push(g.id)});
+    if(gap>=GAP&&favA===aWon)set.add(g.id);else kept.push(g)});
   EXC[sport]={key,set,info};return set}
 const gapInfo=g=>{const s=sessById(g.session_id);if(!s)return null;exclSet(s.sport);return (EXC[s.sport].info||{})[g.id]||null};
 
 
 /* ---------- 可靠度（仿 DUPR Reliability）：最近打了幾場（20 場滿分，舊比賽慢慢打折）＋碰過幾位不同球友（12 位滿分） ---------- */
-function relOf(pid,sport){if(!pid)return 0;const ex=exclSet(sport),now=Date.now(),others=new Set();let W=0;
-  games.forEach(g=>{if(g.status!=='confirmed'||ex.has(g.id)||(sessById(g.session_id)||{}).sport!==sport)return;const all=[...g.a,...g.b];if(!all.includes(pid))return;
-    W+=Math.pow(.5,Math.max(0,now-gTime(g))/864e5/90);all.forEach(x=>{if(x!==pid)others.add(x)})});
+function relOf(pid,sport){if(!pid)return 0;const ex=exclSet(sport),now=Date.now(),others=new Set(),G=GROWS[sport],me=G?uidOf(pid):pid;let W=0;if(!me)return 0;
+  (G||games).forEach(g=>{if(g.status!=='confirmed'||ex.has(g.id))return;if(!G&&(sessById(g.session_id)||{}).sport!==sport)return;const all=[...g.a,...g.b];if(!all.includes(me))return;
+    W+=Math.pow(.5,Math.max(0,now-gTime(g))/864e5/90);all.forEach(x=>{if(x!==me)others.add(x)})});
   return Math.round(100*(.7*Math.min(1,W/20)+.3*Math.min(1,others.size/12)))}
 function ring(pct,sz=40,label=true){const r=(sz-6)/2,c=2*Math.PI*r,col=pct>=70?'#6EE7A8':pct>=40?'#FDE047':'#FFB5AE';
   return `<span class="ring" style="width:${sz}px;height:${sz}px" title="可靠度 ${pct}%" aria-label="可靠度 ${pct}%"><svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="rgba(183,203,224,.25)" stroke-width="4"/><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(c*pct/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/></svg>${label?`<b>${pct}%</b>`:''}</span>`}
@@ -778,11 +797,11 @@ function vRank(){
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
   const all=UI.rankScope==='all';
   return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(all?'all':'club','rscope',[['club','本球團'],['all','全部球團']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
-  ${all?`<h2>全部球團排名</h2>${globalList(sp)}<p class="mute" style="font-size:13px">把所有球團的正式比賽放在一起計算，規則和本球團相同（差距 0.5 以上強隊贏不計分）。同一個人在不同球團打的比賽會合併計算，所以分數可能跟本球團排名略有不同。</p>`:`
+  ${all?`<h2>全部球團排名</h2>${globalList(sp)}<p class="mute" style="font-size:13px">每個人只有一個實力分數：在任何球團打的正式比賽都會一起算。「本球團」只是把同一個分數、限定成本球團的成員來排。</p>`:`
   <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
     ${!ps.length?'<p class="empty">還沒有球員</p>':''}</div>
-  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`}`;
+  <p class="mute" style="font-size:13px">每個人只有一個實力分數，在任何球團打的正式比賽都會一起算；這裡只列本球團的成員。分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`}`;
 }
 
 /* ---------- 08 紀錄 ---------- */
