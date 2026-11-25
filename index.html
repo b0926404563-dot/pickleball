@@ -325,8 +325,7 @@ function vToday(){
   const cu=Math.min(f.courts,Math.floor(n/k));
   return `${pendingCard()}<div class="card"><div class="hrow"><h2>今天誰來打？（${n} 人）</h2>${ps.length?`<button class="btn sm" data-act="all">${n===ps.length?'全不選':'全選'}</button>`:''}</div>
     <div class="row">${ps.map(p=>`<button class="pchip ${sel.includes(p.id)?'on':''}" data-act="pick" data-id="${p.id}" aria-pressed="${sel.includes(p.id)}">${esc(p.name)}</button>`).join('')}</div>
-    <div class="row" style="margin-top:12px;flex-wrap:nowrap"><input type="text" id="guest" maxlength="24" placeholder="臨時球員（沒有帳號的朋友）"><button class="btn" data-act="addGuest">加入</button></div>
-    <p class="mute" style="margin-bottom:0">有帳號的朋友請他用「成員」頁的邀請連結加入，戰績才會跟著他的帳號。</p></div>
+    <p class="mute" style="margin-bottom:0">名單上沒有的人，請他用「成員」頁的邀請連結註冊加入，加入後就會出現在這裡。</p></div>
   <div class="card"><h2>賽制</h2>
     <div class="field"><label>球種</label>${seg(f.sport,'fSport',[['pickleball','匹克球'],['badminton','羽球']])}</div>
     <div class="field"><label>型式</label>${seg(f.mode,'fMode',[['doubles','雙打（輪換搭檔）'],['singles','單打']])}</div>
@@ -348,7 +347,7 @@ function vLive(s){
     <div class="row">${s.present.filter(P).map(id=>`<button class="pchip ${(s.away||[]).includes(id)?'off':'on'}" data-act="away" data-id="${id}">${nm(id)}</button>`).join('')}</div>
     <p class="mute">點名字＝先離場／回到場上，已打的戰績都會保留。</p>
     ${others.length?`<div class="row" style="margin-top:8px">${others.map(p=>`<button class="pchip" data-act="arrive" data-id="${p.id}">＋ ${esc(p.name)}</button>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:12px;flex-wrap:nowrap"><input type="text" id="guest" maxlength="24" placeholder="臨時加入的球員"><button class="btn" data-act="addGuest">加入</button></div></div>
+    <p class="mute" style="margin-bottom:0">還沒註冊的朋友，請他用「成員」頁的邀請連結加入，加入後就能點名字排進來。</p></div>
   <button class="btn big" data-act="reshuffleAsk">人數有變動：重排還沒打的場次</button><div style="height:10px"></div>
   <button class="btn big warn" data-act="endAsk">結束今天的活動</button>`;
 }
@@ -468,8 +467,7 @@ function vMembers(){
   ${me?`<div class="card"><h2>我在這裡的資料</h2><div class="field"><label for="myname">顯示名稱</label><input type="text" id="myname" maxlength="24" value="${esc(me.name)}"></div><button class="btn pri" data-act="saveMine">儲存</button></div>`:''}
   <div class="card"><div class="hrow"><h2>球員名單（${players.filter(p=>!p.hidden).length}）</h2></div>
     ${list.map(p=>`<div class="plr" style="${p.hidden?'opacity:.5':''}"><div><b>${esc(p.name)}</b>${roleOf(p)}${p.hidden?'<span class="tag g">已隱藏</span>':''}<br><span class="mute">匹克球 ${AB.pickleball[p.id]?AB.pickleball[p.id].r.toFixed(3):'3.000'} · 羽球 ${AB.badminton[p.id]?AB.badminton[p.id].r.toFixed(3):'3.000'}</span></div>
-      <div class="row" style="justify-content:flex-end">${!p.user_id&&me?`<button class="btn sm" data-act="claimAsk" data-id="${p.id}">這是我</button>`:''}${(isAdmin()||!p.user_id)&&p.id!==(me&&me.id)?`<button class="btn sm" data-act="pEdit" data-id="${p.id}">編輯</button>`:''}</div></div>`).join('')}
-    <div class="row" style="margin-top:12px;flex-wrap:nowrap"><input type="text" id="guest" maxlength="24" placeholder="新增臨時球員"><button class="btn" data-act="addGuest">加入</button></div></div>
+      <div class="row" style="justify-content:flex-end">${(isAdmin()||!p.user_id)&&p.id!==(me&&me.id)?`<button class="btn sm" data-act="pEdit" data-id="${p.id}">編輯</button>`:''}</div></div>`).join('')}</div>
   <div class="row"><button class="btn" data-act="toClubs">切換俱樂部</button><button class="btn" data-act="editMe">我的帳號</button><button class="btn warn" data-act="logout">登出</button></div>`;
 }
 
@@ -527,7 +525,6 @@ document.addEventListener('click',async e=>{
     case 'create':{const n=$('#cname').value.trim();if(!n){toast('請輸入俱樂部名稱');return}const cid=await rpc('create_club',{p_name:n});await loadClubs();toast('俱樂部建立好了！到「成員」複製邀請連結給朋友');UI.tab='members';return openClub(cid)}
     case 'pick':UI.sel=UI.sel.includes(id)?UI.sel.filter(x=>x!==id):[...UI.sel,id];break;
     case 'all':{const ps=players.filter(p=>!p.hidden).map(p=>p.id);UI.sel=UI.sel.length===ps.length?[]:ps;break}
-    case 'addGuest':return addGuest();
     case 'fSport':UI.form.sport=v;UI.form.target=v==='badminton'?21:11;saveForm();break;
     case 'fMode':UI.form.mode=v;saveForm();break;
     case 'fCourts':UI.form.courts=+v;saveForm();break;

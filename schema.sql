@@ -118,7 +118,7 @@ create policy m_del on members for delete to authenticated
   using ((user_id = auth.uid() and role <> 'owner') or (is_admin(club_id) and role = 'member'));
 
 create policy pl_sel on players for select to authenticated using (is_member(club_id));
-create policy pl_ins on players for insert to authenticated with check (is_member(club_id) and user_id is null);
+-- 不開放直接新增球員：每位球員都必須有自己的帳號（只能透過 create_club / join_club 加入）
 create policy pl_upd on players for update to authenticated
   using (is_member(club_id) and (user_id is null or user_id = auth.uid() or is_admin(club_id)))
   with check (is_member(club_id) and (user_id is null or user_id = auth.uid() or is_admin(club_id)));
