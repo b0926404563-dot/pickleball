@@ -1,0 +1,133 @@
+{
+ "version": "v001",
+ "avatarCanvas": [
+  1024,
+  1536
+ ],
+ "equipCanvas": [
+  512,
+  768
+ ],
+ "equipScale": 0.45,
+ "avatars": [
+  {
+   "id": "avatar_preset_01",
+   "full": "assets/avatars/avatar_preset_01_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_01_head_v001.webp",
+   "grip": [
+    313,
+    596
+   ]
+  },
+  {
+   "id": "avatar_preset_02",
+   "full": "assets/avatars/avatar_preset_02_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_02_head_v001.webp",
+   "grip": [
+    305,
+    592
+   ]
+  },
+  {
+   "id": "avatar_preset_03",
+   "full": "assets/avatars/avatar_preset_03_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_03_head_v001.webp",
+   "grip": [
+    307,
+    592
+   ]
+  },
+  {
+   "id": "avatar_preset_04",
+   "full": "assets/avatars/avatar_preset_04_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_04_head_v001.webp",
+   "grip": [
+    284,
+    581
+   ]
+  },
+  {
+   "id": "avatar_preset_05",
+   "full": "assets/avatars/avatar_preset_05_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_05_head_v001.webp",
+   "grip": [
+    274,
+    596
+   ]
+  },
+  {
+   "id": "avatar_preset_06",
+   "full": "assets/avatars/avatar_preset_06_full_v001.webp",
+   "head": "assets/avatars/avatar_preset_06_head_v001.webp",
+   "grip": [
+    269,
+    580
+   ]
+  }
+ ],
+ "equipment": [
+  {
+   "id": "paddle_01",
+   "sport": "pickleball",
+   "path": "assets/paddles/paddle_01_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "paddle_02",
+   "sport": "pickleball",
+   "path": "assets/paddles/paddle_02_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "paddle_03",
+   "sport": "pickleball",
+   "path": "assets/paddles/paddle_03_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "paddle_04",
+   "sport": "pickleball",
+   "path": "assets/paddles/paddle_04_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "racket_01",
+   "sport": "badminton",
+   "path": "assets/paddles/racket_01_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "racket_02",
+   "sport": "badminton",
+   "path": "assets/paddles/racket_02_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  },
+  {
+   "id": "racket_03",
+   "sport": "badminton",
+   "path": "assets/paddles/racket_03_v001.webp",
+   "grip": [
+    256,
+    636
+   ]
+  }
+ ]
+}
