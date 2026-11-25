@@ -752,7 +752,7 @@ function vRank(){
   <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
     ${!ps.length?'<p class="empty">還沒有球員</p>':''}</div>
-  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。這是球團自己的分數，不是官方 DUPR。</p>`;
+  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`;
 }
 
 /* ---------- 08 紀錄 ---------- */
