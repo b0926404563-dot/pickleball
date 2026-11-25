@@ -194,6 +194,8 @@ body.nonav nav{display:none}
 .dl-head{grid-template-columns:1fr 54px 58px 54px}
 .dl-why{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(253,224,71,.1);border:1px solid rgba(253,224,71,.35);color:#F8FAFC;font-size:14px;line-height:1.55}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
+.ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
+.relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
 </style>
 </head>
 <body class="nonav">
@@ -497,7 +499,7 @@ function vToday(){
   const recent=myGames().slice(0,3);
   return `<h1>大廳</h1><p class="sub">今天想打一場嗎？</p>
   <div class="hero">${figure(avOf(user.id),f.sport)}<div class="who"><b>${esc(me.name)}<span class="lv">Lv.${lvOf(mid)}</span></b><span class="mute">你的球場，準備就緒</span></div>
-    <div class="stats"><div class="chip">匹克球<b>${rt('pickleball')}</b></div><div class="chip">羽球<b>${rt('badminton')}</b></div></div></div>
+    <div class="stats">${['pickleball','badminton'].map(sp=>`<div class="chip">${sp==='pickleball'?'匹克球':'羽球'}<b>${rt(sp)}</b>${A[sp][mid]?`<small class="relc">可靠度 ${relOf(mid,sp)}%</small>`:''}</div>`).join('')}</div></div>
   ${pendingCard()}
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
   <div class="row2"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
@@ -551,6 +553,15 @@ function exclSet(sport){
     if(gap>=GAP&&favA===aWon)set.add(g.id);else done.push(g.id)});
   EXC[sport]={key,set,info};return set}
 const gapInfo=g=>{const s=sessById(g.session_id);if(!s)return null;exclSet(s.sport);return (EXC[s.sport].info||{})[g.id]||null};
+
+
+/* ---------- 可靠度（仿 DUPR Reliability）：最近打了幾場（20 場滿分，舊比賽慢慢打折）＋碰過幾位不同球友（12 位滿分） ---------- */
+function relOf(pid,sport){if(!pid)return 0;const ex=exclSet(sport),now=Date.now(),others=new Set();let W=0;
+  games.forEach(g=>{if(g.status!=='confirmed'||ex.has(g.id)||(sessById(g.session_id)||{}).sport!==sport)return;const all=[...g.a,...g.b];if(!all.includes(pid))return;
+    W+=Math.pow(.5,Math.max(0,now-gTime(g))/864e5/90);all.forEach(x=>{if(x!==pid)others.add(x)})});
+  return Math.round(100*(.7*Math.min(1,W/20)+.3*Math.min(1,others.size/12)))}
+function ring(pct,sz=40,label=true){const r=(sz-6)/2,c=2*Math.PI*r,col=pct>=70?'#6EE7A8':pct>=40?'#FDE047':'#FFB5AE';
+  return `<span class="ring" style="width:${sz}px;height:${sz}px" title="可靠度 ${pct}%" aria-label="可靠度 ${pct}%"><svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="rgba(183,203,224,.25)" stroke-width="4"/><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(c*pct/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/></svg>${label?`<b>${pct}%</b>`:''}</span>`}
 
 /* ---------- 每場比賽的分數變化（V004 rating_snaps） ---------- */
 let SN={};   // game_id → {player_id:{b,a}}
@@ -723,12 +734,11 @@ const meRow=id=>{const m=myP();return m&&m.id===id?'me':''};
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
-  const rel=v=>v.sd<.13?'穩定':v.sd<.2?'普通':'參考';
   return `<h1>排行榜</h1><p class="sub">${esc(club.name)}・生涯</p>${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
-  <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場・可信度${rel(v)}</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span></div>`}).join('')}
+  <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
     ${!ps.length?'<p class="empty">還沒有球員</p>':''}</div>
-  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。這是球團自己的分數，不是官方 DUPR。</p>`;
+  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。這是球團自己的分數，不是官方 DUPR。</p>`;
 }
 
 /* ---------- 08 紀錄 ---------- */
