@@ -217,7 +217,7 @@ body.nonav nav{display:none}
 <main id="view"><div class="empty">載入中…</div></main>
 <nav id="nav">
 <button data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>對戰大廳</button>
-<button data-tab="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21v-7h4v7m2 0V4h4v17m2 0V9h4v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>排名</button>
+<button data-tab="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21v-7h4v7m2 0V4h4v17m2 0V9h4v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>天梯排行</button>
 <button data-tab="records"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>紀錄</button>
 <button data-tab="members"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2m2-6a4 4 0 0 1 3 4v2M13.5 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM17 4a4 4 0 0 1 0 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>成員</button>
 <button data-tab="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zM3 21a9 6 0 0 1 18 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>我的</button>
@@ -745,14 +745,44 @@ function statsOf(gl){
   return Object.values(ps).filter(x=>P(x.id)).sort((x,y)=>(y.w/y.g-x.w/x.g)||(y.w-x.w)||((y.pf-y.pa)-(x.pf-x.pa)));
 }
 const meRow=id=>{const m=myP();return m&&m.id===id?'me':''};
+
+/* ---------- 天梯排行・全部球團（跨球團，用帳號 id 計算，同樣套用 DUPR 新規則） ---------- */
+const GL={};   // sport → {at, list, err}
+function fitRows(rows,now,lam=3){const cnt={};rows.forEach(r=>[...r.a,...r.b].forEach(id=>cnt[id]=(cnt[id]||0)+1));
+  const ids=Object.keys(cnt),n=ids.length,ix={};if(!n)return{};ids.forEach((id,i)=>ix[id]=i);
+  const A=ids.map((_,i)=>ids.map((_,j)=>i===j?lam:0)),v=ids.map(()=>0);
+  rows.forEach(r=>{const w=Math.pow(.5,Math.max(0,now-r.t)/864e5/90),y=Math.log((r.sa+.5)/(r.sb+.5)),xs=[...r.a.map(id=>[ix[id],1]),...r.b.map(id=>[ix[id],-1])];
+    xs.forEach(([i,xi])=>{v[i]+=w*xi*y;xs.forEach(([j,xj])=>A[i][j]+=w*xi*xj)})});
+  const inv=invert(A),out={};ids.forEach((id,i)=>{const b=inv[i].reduce((t,x,j)=>t+x*v[j],0);out[id]={r:3+RK*b,g:cnt[id]}});return out}
+async function loadGlobal(sp){GL[sp]={loading:true};
+  try{const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});if(error)throw error;
+    const rows=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,t:new Date(r.t).getTime()})).sort((x,y)=>x.t-y.t);
+    const kept=[];rows.forEach(r=>{const R=fitRows(kept,r.t),av=t=>t.reduce((x,p)=>x+(R[p]?R[p].r:3),0)/t.length,ga=av(r.a),gb=av(r.b);
+      if(!(Math.abs(ga-gb)>=GAP&&(ga>gb)===(r.sa>r.sb)))kept.push(r)});
+    const R=fitRows(kept,Date.now()),uids=Object.keys(R),now=Date.now();
+    const rel={};uids.forEach(u=>{let W=0;const o=new Set();kept.forEach(r=>{const all=[...r.a,...r.b];if(!all.includes(u))return;W+=Math.pow(.5,Math.max(0,now-r.t)/864e5/90);all.forEach(x=>{if(x!==u)o.add(x)})});
+      rel[u]=Math.round(100*(.7*Math.min(1,W/20)+.3*Math.min(1,o.size/12)))});
+    const ppl={};if(uids.length){const {data:pp}=await sb.rpc('global_people',{p_ids:uids});(pp||[]).forEach(x=>{ppl[x.id]=x;if(x.avatar&&Object.keys(x.avatar).length&&!avatars[x.id])avatars[x.id]=x.avatar})}
+    GL[sp]={at:Date.now(),list:uids.map(u=>({uid:u,r:R[u].r,g:R[u].g,rel:rel[u],name:(ppl[u]||{}).nickname||'球友',clubs:(ppl[u]||{}).clubs||''})).sort((x,y)=>y.r-x.r)}}
+  catch(e){GL[sp]={err:errMsg(e)}}
+  if(UI.tab==='rank')render()}
+function globalList(sp){const G=GL[sp];
+  if(!G||(!G.loading&&!G.list&&!G.err)||(G.at&&Date.now()-G.at>120000)){if(!G||!G.loading)loadGlobal(sp);if(!G||!G.list)return `<div class="card"><p class="empty">載入全部球團的排名中…</p></div>`}
+  if(G.loading&&!G.list)return `<div class="card"><p class="empty">載入全部球團的排名中…</p></div>`;
+  if(G.err)return `<div class="card"><p class="empty">讀取失敗：${esc(G.err)}</p></div>`;
+  if(!G.list.length)return `<div class="card"><p class="empty">還沒有任何${SP[sp]}正式比賽。</p></div>`;
+  return `<div class="card">${G.list.map((x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${esc(x.name)}${x.uid===user.id?'（我）':''}</b><small>${x.g} 場${x.clubs?'・'+esc(x.clubs):''}</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span>${ring(x.rel,40)}</div>`).join('')}</div>`}
+
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
-  return `<h1>排行榜</h1><p class="sub">${esc(club.name)}・生涯</p>${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  const all=UI.rankScope==='all';
+  return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(all?'all':'club','rscope',[['club','本球團'],['all','全部球團']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
+  ${all?`<h2>全部球團排名</h2>${globalList(sp)}<p class="mute" style="font-size:13px">把所有球團的正式比賽放在一起計算，規則和本球團相同（差距 0.5 以上強隊贏不計分）。同一個人在不同球團打的比賽會合併計算，所以分數可能跟本球團排名略有不同。</p>`:`
   <h2>球員排名</h2><div class="card">${rated.map((p,i)=>{const v=AB[p.id];return `<div class="item ${i===0?'r1':''} ${meRow(p.id)}"><span class="rk">${String(i+1).padStart(2,'0')}</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>${v.g} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${v.r.toFixed(3)}</span>${ring(relOf(p.id,sp),40)}</div>`}).join('')}
     ${un.map(p=>`<div class="item ${meRow(p.id)}"><span class="rk">—</span>${headImg(p.id)}<div class="grow"><b>${esc(p.name)}</b><small>0 場</small></div><span class="mute">未定級</span></div>`).join('')}
     ${!ps.length?'<p class="empty">還沒有球員</p>':''}</div>
-  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`;
+  <p class="mute" style="font-size:13px">分數仿 DUPR 尺度，每個人第一場都從 3.000 開始算；會校正隊友與對手的強弱。右邊圓環是「可靠度」：最近打越多場、碰過越多不同球友，分數越準（打滿約 20 場、跟 12 位不同的人打過就接近 100%）。</p>`}`;
 }
 
 /* ---------- 08 紀錄 ---------- */
@@ -1005,6 +1035,7 @@ document.addEventListener('click',async e=>{
     case 'editOff':UI.edit=null;UI.fill=null;break;
     /* 排名／紀錄 */
     case 'rs':UI.rankSport=v;break;
+    case 'rscope':UI.rankScope=v;break;
     case 'detF':UI.detMine=v==='mine';break;
     case 'meSp':UI.meSport=v;break;
     case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
