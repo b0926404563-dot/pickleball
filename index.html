@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.item[data-act]:active{background:rgba(253,224,71,.06)}.fol{color:var(--y);margin-right:4px}.btn.fol-on{color:var(--y);border-color:rgba(253,224,71,.5)}
+.item[data-act]{cursor:pointer}.clubrow .clubgo{background:none;border:0;color:inherit;text-align:left;cursor:pointer;padding:0;font:inherit;display:flex;flex-direction:column;gap:2px}.clubrow .clubgo small{color:var(--mute)}.item[data-act]:active{background:rgba(253,224,71,.06)}.fol{color:var(--y);margin-right:4px}.btn.fol-on{color:var(--y);border-color:rgba(253,224,71,.5)}
 .me-card{position:relative;display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;margin:12px 0 14px;padding:14px 14px 52px;border-radius:20px;border:1px solid #466783;background:radial-gradient(120% 90% at 0% 0%,#2E5A80 0%,#172F46 60%,#0F2237 100%)}
 .me-fig{height:150px;position:relative}.me-card .me-fig .fig{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:100px;height:auto;margin:0;aspect-ratio:2/3}
 .me-info small{display:block;color:#B7CBE0;font-size:12px}.me-name{display:flex;align-items:center;gap:6px;font-size:18px;margin-bottom:6px}
@@ -415,10 +415,11 @@ async function afterAuth(){
   if(code||rq)history.replaceState(null,'',location.pathname);
   if(code){
     const {data:cid,error:e2}=await sb.rpc('join_club',{p_code:code});
-    if(e2)toast(errMsg(e2));else{await loadClubs();toast('已加入俱樂部');if(!rq)return openClub(cid)}}
+    if(e2)toast(errMsg(e2));else{await loadClubs();await setDefIfNone(cid);toast('已加入球團');if(!rq)return openClub(cid)}}
   if(rq){const {data:rs}=await sb.from('sessions').select('id,club_id,status').eq('id',rq).maybeSingle();
     if(rs&&rs.status!=='done'&&myClubs.some(c=>c.id===rs.club_id)){setRoom(rs.id);UI.tab='games';ls.set('pbc-tab','games');return openClub(rs.club_id)}
     toast('這個房間已經關閉，或你還不是這個俱樂部的成員')}
+  const dc=defClub();if(dc)return openClub(dc);
   const last=ls.get('pbc-club');
   if(last&&myClubs.some(c=>c.id===last))return openClub(last);
   if(myClubs.length===1)return openClub(myClubs[0].id);
@@ -494,8 +495,14 @@ function vNick(){const def=(user&&user.user_metadata&&(user.user_metadata.full_n
   <label class="lb" for="nick">暱稱</label><input type="text" id="nick" maxlength="20" value="${esc(profile&&profile.nickname||def)}" placeholder="例如 EricKuo">
   <p class="mute" style="margin-top:10px">匹克球和羽球的分數，大家都從 3.000 開始。</p>
   <div class="stack"><button class="btn pri wide" data-act="saveNick">完成</button><button class="btn wide ghost" data-act="logout">登出</button></div>`}
-function vClubs(){return `<h1>我的球團</h1><p class="sub">${esc(profile.nickname)}</p>
-  <div class="card">${myClubs.length?myClubs.map(c=>`<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openClub" data-id="${c.id}"><div class="grow"><b>${esc(c.name)}</b><small>${c.role==='owner'?'團長':c.role==='admin'?'幹部':'成員'}</small></div><span class="mute">›</span></button>`).join(''):'<p class="empty">還沒有加入任何球團。</p>'}</div>
+/* ---------- 預設球團：打開 App 直接進這團（存在帳號，換手機也一樣） ---------- */
+const defClub=()=>{const d=profile&&profile.default_club;if(d&&myClubs.some(c=>c.id===d))return d;return myClubs.length===1?myClubs[0].id:null};
+async function setDef(cid){const {data,error}=await sb.from('profiles').update({default_club:cid}).eq('id',user.id).select().single();if(error)throw error;profile=data}
+async function setDefIfNone(cid){if(profile&&profile.default_club&&myClubs.some(c=>c.id===profile.default_club))return;
+  const old=myClubs.length===2?myClubs.find(c=>c.id!==cid):null;try{await setDef(old?old.id:cid)}catch(e){}}
+function vClubs(){const dc=defClub();return `<h1>我的球團</h1><p class="sub">${esc(profile.nickname)}・可以同時加入很多球團</p>
+  <div class="card">${myClubs.length?myClubs.map(c=>`<div class="item clubrow"><button class="grow clubgo" data-act="openClub" data-id="${c.id}"><b>${esc(c.name)}${c.id===dc?' <span class="pill y">★ 預設</span>':''}</b><small>${c.role==='owner'?'團長':c.role==='admin'?'幹部':'成員'}</small></button>${c.id===dc?'':`<button class="btn sm ghost" data-act="setDef" data-id="${c.id}">設為預設</button>`}<span class="mute">›</span></div>`).join(''):'<p class="empty">還沒有加入任何球團。</p>'}</div>
+  ${myClubs.length>1?'<p class="mute" style="font-size:13px">打開 App 會直接進「預設」球團；實力分數只有一個，在哪個球團打都一起算。</p>':''}
   <h2>用邀請碼加入</h2><div class="row" style="flex-wrap:nowrap"><input type="text" id="code" maxlength="6" placeholder="6 碼邀請碼" autocapitalize="off"><button class="btn pri" data-act="join">加入</button></div>
   <h2>開一個新球團</h2><div class="row" style="flex-wrap:nowrap"><input type="text" id="cname" maxlength="40" placeholder="例如：一皮闖天下"><button class="btn pri" data-act="create">建立</button></div>
   <div class="row" style="margin-top:20px"><button class="btn sm" data-act="editMe">修改暱稱</button><button class="btn sm warn" data-act="logout">登出</button></div>`}
@@ -814,14 +821,14 @@ function vRecords(){
   if(UI.detail){const s=sessById(UI.detail);if(s)return vDetail(s);UI.detail=null}
   const flt=UI.recSport||'all',mine=myGames(flt==='all'?null:flt),me=myP(),w=mine.filter(g=>{const sd=sideOf(g,me.id);return sd==='a'?g.sa>g.sb:g.sb>g.sa}).length;
   const GA=(GROWS.pickleball&&GROWS.badminton)?(flt==='all'?['pickleball','badminton']:[flt]).flatMap(sp=>myGlobal(sp)||[]).sort((x,y)=>gTime(y.g)-gTime(x.g)):null;
-  if(GA)needPeople(GA.slice(0,50).flatMap(x=>[...x.g.a,...x.g.b]));
+  if(GA)needPeople(GA.slice(0,10).flatMap(x=>[...x.g.a,...x.g.b]));
   const gN=GA?GA.length:mine.length,gW=GA?GA.filter(x=>(x.g.a.includes(user.id))===(x.g.sa>x.g.sb)).length:w;
   const logs=sessions.filter(x=>x.status!=='lobby'&&(x.status==='live'||played(x)));
   return `<h1>歷史紀錄</h1><p class="sub">我的正式戰績・所有球團合計</p>
   <div class="row2"><div class="card"><small class="mute">出賽</small><div class="num" style="font-size:28px;font-weight:800">${gN} <small style="font-size:14px">場</small></div></div>
     <div class="card"><small class="mute">戰績</small><div class="num" style="font-size:28px;font-weight:800;color:var(--y)">${gW} <small style="font-size:14px">勝</small> ${gN-gW} <small style="font-size:14px">敗</small></div></div></div>
   ${seg(flt,'recF',[['all','全部'],['pickleball','匹克球'],['badminton','羽球']])}
-  <h2>最近比賽</h2>${GA?(GA.length?`<div class="mr-list">${GA.slice(0,50).map(x=>mrRowG(x,user.id)).join('')}</div>`:'<div class="card"><p class="empty">還沒有確認過的比賽</p></div>'):`<div class="card">${mine.length?mine.slice(0,50).map(gameLine).join(''):'<p class="empty">還沒有確認過的比賽</p>'}</div>`}
+  <h2>最近 10 場</h2>${GA?(GA.length?`<div class="mr-list">${GA.slice(0,10).map(x=>mrRowG(x,user.id)).join('')}</div>`:'<div class="card"><p class="empty">還沒有確認過的比賽</p></div>'):`<div class="card">${mine.length?mine.slice(0,10).map(gameLine).join(''):'<p class="empty">還沒有確認過的比賽</p>'}</div>`}
   <h2>球團活動紀錄</h2><div class="card">${logs.length?logs.map(s=>{const gl=gamesOf(s.id).filter(g=>g.status!=='open');
     return `<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="detail" data-id="${s.id}"><div class="grow"><b>${esc(roomName(s))} ${sportPill(s)}${s.status==='live'?' <span class="pill live">進行中</span>':''}</b><small>${D(s.started_at)} ${HM(s.started_at)}${s.place?'・'+esc(s.place):''}・${(s.present||[]).length} 人・${gl.length} 場${(()=>{const m=(myP()||{}).id,n=gl.filter(g=>m&&[...g.a,...g.b].includes(m)).length;return n?`・<b style="color:var(--y)">我打了 ${n} 場</b>`:'・我沒參加'})()}</small></div><span class="mute">›</span></button>`}).join(''):'<p class="empty">還沒有活動紀錄</p>'}</div>`;
 }
@@ -865,6 +872,7 @@ function vMembers(){
     <span class="pill ${roleOf(p)==='成員'?'':'y'}">${roleOf(p)}</span>${isAdmin()&&!(me&&me.id===p.id)?`<button class="btn sm" data-act="pEdit" data-id="${p.id}">編輯</button>`:''}</div>`).join('')}</div>
   ${me?`<h2>我在這裡的資料</h2><div class="row" style="flex-wrap:nowrap"><input type="text" id="myname" maxlength="24" value="${esc(me.name)}" aria-label="顯示名稱"><button class="btn" data-act="saveMine">儲存</button></div>`:''}
   <h2>邀請</h2><div class="card"><p class="mute" style="margin:0">把連結貼到 LINE 群組，朋友用 Google 登入後就會加入「${esc(club.name)}」。邀請碼 <b class="num" style="color:var(--y)">${esc(club.join_code)}</b></p><div class="link">${esc(link)}</div></div>
+  ${myClubs.length>1?(defClub()===club.id?'<p class="mute" style="margin:14px 0 0">★ 這是你的預設球團，打開 App 會直接進來。</p>':`<button class="btn wide" style="margin-top:14px" data-act="setDef" data-id="${club.id}">★ 設為我的預設球團</button>`):''}
   <div class="row" style="margin-top:10px"><button class="btn sm" data-act="toClubs">切換球團</button><button class="btn sm" data-act="editMe">我的帳號</button><button class="btn sm warn" data-act="logout">登出</button></div>
   <div class="foot"><button class="btn pri wide" data-act="copyLink">邀請成員（複製連結）</button></div>`;
 }
@@ -912,7 +920,7 @@ const folStar=u=>FOL.has(u)?'<span class="fol" aria-label="追蹤中">★</span>
 function vPerson(uid){
   const sp=UI.rankSport,self=uid===user.id,R=gAB(sp),cur=R&&R[uid],L=userGlobal(sp,uid);
   if(!L)return `<button class="btn sm ghost" data-act="pBack">‹ 天梯排行</button><div class="card" style="margin-top:10px"><p class="empty">載入中…</p></div>`;
-  const S=gStats(L,uid,cur?cur.r:null),rel=relU(uid,sp),f3=x=>x==null?'—':x.toFixed(3),n=UI.pMore?50:10;
+  const S=gStats(L,uid,cur?cur.r:null),rel=relU(uid,sp),f3=x=>x==null?'—':x.toFixed(3),n=10;
   needPeople([uid,...L.slice(0,n).flatMap(x=>[...x.g.a,...x.g.b])]);
   const tile=(v,l)=>`<div class="pf-tile"><b>${v}</b><span>${l}</span></div>`;
   const lvRow=(k,lab,desc)=>{const [a,b]=S.lv[k],m=a+b;return `<div class="pf-lv"><div><b>${lab}</b><small>${desc}</small></div><div class="pf-bar"><i style="width:${m?100*a/m:0}%"></i></div><span>${a} 勝 ${b} 敗</span></div>`};
@@ -932,8 +940,8 @@ function vPerson(uid){
   ${L.length?`<h2>表現</h2><div class="pf-grid">${tile(`${S.w}-${S.l}`,'戰績（勝-敗）')}${tile(S.pct==null?'—':S.pct.toFixed(1)+'%','平均得分率')}${tile(f3(S.avgP),'平均搭檔分數')}${tile(f3(S.avgO),'平均對手分數')}</div>
     ${hN?`<h2>我和${nm2}</h2><div class="row2"><div class="card"><small class="mute">當隊友</small><div class="num" style="font-size:22px;font-weight:800">${h.tw} <small style="font-size:13px">勝</small> ${h.tl} <small style="font-size:13px">敗</small></div></div><div class="card"><small class="mute">當對手（我的戰績）</small><div class="num" style="font-size:22px;font-weight:800;color:var(--y)">${h.vw} <small style="font-size:13px">勝</small> ${h.vl} <small style="font-size:13px">敗</small></div></div></div>`:''}
     <h2>對上不同程度</h2><div class="card">${lvRow('up','比他強','對手平均高 0.25 以上')}${lvRow('eq','差不多','相差 0.25 以內')}${lvRow('dn','比他弱','對手平均低 0.25 以上')}</div>
-    <h2>對戰紀錄</h2><div class="mr-list">${L.slice(0,n).map(x=>mrRowG(x,uid)).join('')}</div>
-    ${L.length>n?`<button class="btn wide ghost" data-act="pMore" style="margin-top:10px">看更多（共 ${L.length} 場）</button>`:''}`
+    <h2>最近 10 場</h2><div class="mr-list">${L.slice(0,n).map(x=>mrRowG(x,uid)).join('')}</div>
+    `
   :`<div class="card" style="margin-top:12px"><p class="empty">還沒有${SP[sp]}的正式比賽。</p></div>`}
   <p class="mute" style="font-size:13px;margin-top:14px">追蹤不需要對方同意，對方也不會收到通知；追蹤的人會出現在天梯排行的「好友」。</p>`}
 function myStats(sp,mid){
@@ -1053,8 +1061,9 @@ document.addEventListener('click',async e=>{
       <p class="mute" style="margin-top:8px">這是加入新球團時的預設名稱；各球團的顯示名稱到「成員」頁修改。</p><div class="row2"><button class="btn pri" data-act="saveNick">儲存</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'toClubs':if(chan){sb.removeChannel(chan);chan=null}club=null;ls.set('pbc-club','');await loadClubs();UI.view='clubs';break;
     case 'openClub':return openClub(id);
-    case 'join':{const c=$('#code').value.trim();if(!c)return;const cid=await rpc('join_club',{p_code:c});await loadClubs();toast('已加入');return openClub(cid)}
-    case 'create':{const n=$('#cname').value.trim();if(!n){toast('請輸入球團名稱');return}const cid=await rpc('create_club',{p_name:n});await loadClubs();toast('球團建立好了！到「成員」複製邀請連結給朋友');UI.tab='members';return openClub(cid)}
+    case 'setDef':{t.disabled=true;await setDef(id);toast('已設為預設球團');break}
+    case 'join':{const c=$('#code').value.trim();if(!c)return;const cid=await rpc('join_club',{p_code:c});await loadClubs();await setDefIfNone(cid);toast('已加入');return openClub(cid)}
+    case 'create':{const n=$('#cname').value.trim();if(!n){toast('請輸入球團名稱');return}const cid=await rpc('create_club',{p_name:n});await loadClubs();await setDefIfNone(cid);toast('球團建立好了！到「成員」複製邀請連結給朋友');UI.tab='members';return openClub(cid)}
     /* 開房 */
     case 'newRoom':go('create');break;
     case 'fSport':UI.form.sport=v;UI.form.target=v==='badminton'?21:11;saveForm();break;

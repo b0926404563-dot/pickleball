@@ -658,3 +658,6 @@ create policy follows_sel on follows for select to authenticated using (follower
 create policy follows_ins on follows for insert to authenticated with check (follower = auth.uid());
 create policy follows_del on follows for delete to authenticated using (follower = auth.uid());
 grant select, insert, delete on follows to authenticated;
+
+-- V009：預設球團（打開 App 直接進這團；存在帳號裡，換手機也一樣）
+alter table profiles add column if not exists default_club uuid references clubs(id) on delete set null;
