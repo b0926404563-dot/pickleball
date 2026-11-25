@@ -157,6 +157,8 @@ body.nonav nav{display:none}
 .hero2 .fig{width:150px;margin:0 auto 8px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .pendbar{margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(253,224,71,.14);border:1.5px solid var(--y);color:var(--y);font-size:17px;font-weight:800;text-align:center;letter-spacing:.5px}
+.item.mygame{box-shadow:inset 4px 0 0 var(--y)}
+.mine{color:var(--y);font-weight:800}
 </style>
 </head>
 <body class="nonav">
@@ -637,14 +639,17 @@ function vRecords(){
   ${seg(flt,'recF',[['all','全部'],['pickleball','匹克球'],['badminton','羽球']])}
   <h2>最近比賽</h2><div class="card">${mine.length?mine.slice(0,50).map(gameLine).join(''):'<p class="empty">還沒有確認過的比賽</p>'}</div>
   <h2>球團活動紀錄</h2><div class="card">${logs.length?logs.map(s=>{const gl=gamesOf(s.id).filter(g=>g.status!=='open');
-    return `<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="detail" data-id="${s.id}"><div class="grow"><b>${esc(roomName(s))} ${sportPill(s)}${s.status==='live'?' <span class="pill live">進行中</span>':''}</b><small>${D(s.started_at)} ${HM(s.started_at)}${s.place?'・'+esc(s.place):''}・${(s.present||[]).length} 人・${gl.length} 場</small></div><span class="mute">›</span></button>`}).join(''):'<p class="empty">還沒有活動紀錄</p>'}</div>`;
+    return `<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="detail" data-id="${s.id}"><div class="grow"><b>${esc(roomName(s))} ${sportPill(s)}${s.status==='live'?' <span class="pill live">進行中</span>':''}</b><small>${D(s.started_at)} ${HM(s.started_at)}${s.place?'・'+esc(s.place):''}・${(s.present||[]).length} 人・${gl.length} 場${(()=>{const m=(myP()||{}).id,n=gl.filter(g=>m&&[...g.a,...g.b].includes(m)).length;return n?`・<b style="color:var(--y)">我打了 ${n} 場</b>`:'・我沒參加'})()}</small></div><span class="mute">›</span></button>`}).join(''):'<p class="empty">還沒有活動紀錄</p>'}</div>`;
 }
 function vDetail(s){
   const gl=gamesOf(s.id).filter(g=>g.status!=='open'),cf=gl.filter(g=>g.status==='confirmed'),st=statsOf(cf),AB=ability(s.sport,s.id);
+  const mid=(myP()||{}).id,inG=g=>!!mid&&[...g.a,...g.b].includes(mid),mg=gl.filter(inG),myN=mg.length,myW=mg.filter(g=>(g.a.includes(mid))===(g.sa>g.sb)).length;
+  const shown=UI.detMine&&myN?mg:gl;
   return `<button class="btn sm ghost" data-act="back">‹ 所有紀錄</button>
   <h1 style="margin-top:10px">${esc(roomName(s))}</h1><p class="sub">${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}・${modeTxt(s)}・${ruleTxt(s)}${s.place?'・'+esc(s.place):''}</p>
-  <div class="card">${gl.length?gl.map(g=>`<button class="item" style="width:100%;background:none;border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openGame" data-id="${g.id}"><div class="grow"><b>${teamNames(g.a)} vs ${teamNames(g.b)}</b><small>${g.status==='pending'?'待確認':'已確認'}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span></button>`).join(''):'<p class="empty">沒有比分</p>'}</div>
-  ${st.length?`<h2>這次的表現</h2><div class="card"><table><thead><tr><th>球友</th><th class="num">勝-負</th><th class="num">分差</th><th class="num">實力</th></tr></thead><tbody>${st.map(x=>`<tr><td>${nm(x.id)}</td><td class="num">${x.w}-${x.l}</td><td class="num">${x.pf-x.pa>0?'+':''}${x.pf-x.pa}</td><td class="num">${AB[x.id]?AB[x.id].r.toFixed(3):'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
+  ${myN?`<p style="margin:0 0 10px"><span class="pill y">我打了 ${myN} 場・${myW} 勝 ${myN-myW} 敗</span></p>${seg(UI.detMine?'mine':'all','detF',[['all','全部場次'],['mine','只看我打的']])}`:`<p class="mute" style="margin:0 0 10px">這次你沒有上場。</p>`}
+  <div class="card">${shown.length?shown.map(g=>{const im=inG(g),won=im&&((g.a.includes(mid))===(g.sa>g.sb));return `<button class="item ${im?'me mygame':''}" style="width:100%;background:${im?'':'none'};border-left:0;border-right:0;border-bottom:0;cursor:pointer;text-align:left" data-act="openGame" data-id="${g.id}"><div class="grow"><b>${teamNames(g.a,mid)} vs ${teamNames(g.b,mid)}</b><small>${g.status==='pending'?'待確認':'已確認'}${im?`・<span style="color:${won?'var(--ok)':'#ff8a8a'};font-weight:800">我${won?'贏':'輸'}</span>`:''}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span></button>`}).join(''):'<p class="empty">沒有比分</p>'}</div>
+  ${st.length?`<h2>這次的表現</h2><div class="card"><table><thead><tr><th>球友</th><th class="num">勝-負</th><th class="num">分差</th><th class="num">實力</th></tr></thead><tbody>${st.map(x=>`<tr class="${meRow(x.id)}"><td>${nm(x.id)}${x.id===mid?'（我）':''}</td><td class="num">${x.w}-${x.l}</td><td class="num">${x.pf-x.pa>0?'+':''}${x.pf-x.pa}</td><td class="num">${AB[x.id]?AB[x.id].r.toFixed(3):'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
   <div class="stack">${cf.length?`<button class="btn wide" data-act="copy" data-id="${s.id}">複製戰績（貼到 LINE）</button>`:''}${isAdmin()?`<button class="btn warn wide" data-act="delAsk" data-id="${s.id}">刪除這次活動</button>`:''}</div>`;
 }
 function report(s){
@@ -829,6 +834,7 @@ document.addEventListener('click',async e=>{
     case 'editOff':UI.edit=null;UI.fill=null;break;
     /* 排名／紀錄 */
     case 'rs':UI.rankSport=v;break;
+    case 'detF':UI.detMine=v==='mine';break;
     case 'recF':UI.recSport=v;break;
     case 'detail':UI.detail=id;scrollTo(0,0);break;
     case 'back':UI.detail=null;break;
