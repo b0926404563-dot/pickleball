@@ -196,6 +196,20 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
+.me-card{position:relative;display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;margin:12px 0 14px;padding:14px 14px 52px;border-radius:20px;border:1px solid #466783;background:radial-gradient(120% 90% at 0% 0%,#2E5A80 0%,#172F46 60%,#0F2237 100%)}
+.me-fig{height:150px;position:relative}.me-card .me-fig .fig{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:100px;height:auto;margin:0;aspect-ratio:2/3}
+.me-info small{display:block;color:#B7CBE0;font-size:12px}.me-name{display:flex;align-items:center;gap:6px;font-size:18px;margin-bottom:6px}
+.me-r{font:800 38px/1.05 Inter,system-ui,sans-serif;color:#FDE047;font-variant-numeric:tabular-nums;margin:2px 0}
+.me-ring{display:grid;justify-items:center;gap:4px}.me-ring .ring{margin:0}.me-ring .ring b{font-size:14px}.me-ring small{color:#B7CBE0;font-size:12px}
+.me-edit{position:absolute;right:12px;bottom:10px}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pf-tile{padding:14px 14px 12px;border-radius:16px;background:linear-gradient(120deg,#294D69,#172F46);border:1px solid #466783}
+.pf-tile b{display:block;font:800 24px/1.15 Inter,system-ui,sans-serif;color:#F8FAFC;font-variant-numeric:tabular-nums}.pf-tile span{font-size:13px;color:#B7CBE0}
+.pf-rank{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:16px;border-radius:18px;cursor:pointer;background:linear-gradient(110deg,#FDE047,#FFED91);color:#102A43}
+.pf-rank b{display:block;font:900 28px/1.1 Inter,system-ui,sans-serif}.pf-rank span{font-size:13px;font-weight:700}.pf-go{white-space:nowrap}
+.pf-lv{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(70,103,131,.5)}.pf-lv:last-child{border-bottom:0}
+.pf-lv small{display:block;font-size:11px;color:#B7CBE0}.pf-lv>span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pf-bar{height:8px;border-radius:8px;background:rgba(255,181,174,.35);overflow:hidden}.pf-bar i{display:block;height:100%;background:#6EE7A8;border-radius:8px}
 </style>
 </head>
 <body class="nonav">
@@ -206,7 +220,7 @@ body.nonav nav{display:none}
 <button data-tab="rank"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21v-7h4v7m2 0V4h4v17m2 0V9h4v12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>排名</button>
 <button data-tab="records"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>紀錄</button>
 <button data-tab="members"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20v-2a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v2m2-6a4 4 0 0 1 3 4v2M13.5 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM17 4a4 4 0 0 1 0 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>成員</button>
-<button data-tab="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zM3 21a9 6 0 0 1 18 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>角色</button>
+<button data-tab="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a5 5 0 1 1 0 10 5 5 0 0 1 0-10zM3 21a9 6 0 0 1 18 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>我的</button>
 </nav>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -799,9 +813,43 @@ function vMembers(){
 }
 
 /* ---------- 10 角色 ---------- */
+
+/* ---------- 我的（個人數據，仿 DUPR Performance） ---------- */
+function myStats(sp,mid){
+  const AB=ability(sp),me=AB[mid],ex=exclSet(sp);
+  const gl=games.filter(g=>g.status==='confirmed'&&(sessById(g.session_id)||{}).sport===sp&&[...g.a,...g.b].includes(mid)).sort((x,y)=>gTime(y)-gTime(x));
+  let w=0,pf=0,pa=0,pS=0,pN=0,oS=0,oN=0,hi=me?me.r:null;const lv={up:[0,0],eq:[0,0],dn:[0,0]};
+  gl.forEach(g=>{const inA=g.a.includes(mid),mine=inA?g.a:g.b,opp=inA?g.b:g.a,ms=inA?g.sa:g.sb,os=inA?g.sb:g.sa,won=ms>os,sn=SN[g.id]||{},b=p=>sn[p]?sn[p].b:3;
+    if(won)w++;pf+=ms;pa+=os;mine.filter(p=>p!==mid).forEach(p=>{pS+=b(p);pN++});opp.forEach(p=>{oS+=b(p);oN++});
+    if(sn[mid])hi=Math.max(hi==null?0:hi,sn[mid].a);
+    const myB=b(mid),oAvg=opp.reduce((t,p)=>t+b(p),0)/opp.length,k=oAvg>myB+0.25?'up':oAvg<myB-0.25?'dn':'eq';lv[k][won?0:1]++});
+  const rated=Object.keys(AB).filter(P),below=me?rated.filter(id=>AB[id].r<me.r).length:0;
+  return {AB,me,gl,w,l:gl.length-w,pct:pf+pa?100*pf/(pf+pa):null,avgP:pN?pS/pN:null,avgO:oN?oS/oN:null,hi,lv,
+    beat:me&&rated.length>1?Math.round(100*below/(rated.length-1)):null,rank:me?rated.filter(id=>AB[id].r>me.r).length+1:null,n:rated.length,rel:relOf(mid,sp),ex}}
+function vMe(){
+  const me=myP(),mid=me&&me.id,sp=UI.meSport||UI.form.sport||'pickleball',S=myStats(sp,mid),f3=x=>x==null?'—':x.toFixed(3);
+  const tile=(v,l,c='')=>`<div class="pf-tile ${c}"><b>${v}</b><span>${l}</span></div>`;
+  const lvRow=(k,lab,desc)=>{const [a,b]=S.lv[k],n=a+b;return `<div class="pf-lv"><div><b>${lab}</b><small>${desc}</small></div><div class="pf-bar"><i style="width:${n?100*a/n:0}%"></i></div><span>${a} 勝 ${b} 敗</span></div>`};
+  return `<h1>我的</h1><p class="sub">${esc(club.name)}・個人數據</p>
+  <div class="me-card"><div class="me-fig">${figure(avOf(user.id),sp)}</div>
+    <div class="me-info"><b class="me-name">${esc(me?me.name:'')}<span class="lv">Lv.${lvOf(mid)}</span></b>
+      <small>${SP[sp]}實力分數</small><div class="me-r">${S.me?S.me.r.toFixed(3):'未定級'}</div>
+      <small>生涯最高 ${S.hi!=null?S.hi.toFixed(3):'—'}</small></div>
+    <div class="me-ring">${ring(S.rel,64)}<small>可靠度</small></div>
+    <button class="btn sm ghost me-edit" data-act="avEditOn">更換角色與球拍</button></div>
+  ${seg(sp,'meSp',[['pickleball','匹克球'],['badminton','羽球']])}
+  <h2>表現</h2>
+  ${S.gl.length?`<div class="pf-grid">${tile(`${S.w}-${S.l}`,'戰績（勝-敗）')}${tile(S.pct==null?'—':S.pct.toFixed(1)+'%','平均得分率')}${tile(f3(S.avgP),'平均搭檔分數')}${tile(f3(S.avgO),'平均對手分數')}</div>
+    ${S.beat!=null?`<div class="pf-rank" data-act="tabRank"><div><b>贏過 ${S.beat}%</b><span>的球團球員（第 ${S.rank} 名 / ${S.n} 人）</span></div><span class="pf-go">看排名 ›</span></div>`:''}
+    <h2>對上不同程度</h2><div class="card">${lvRow('up','比我強','對手平均高 0.25 以上')}${lvRow('eq','差不多','相差 0.25 以內')}${lvRow('dn','比我弱','對手平均低 0.25 以上')}</div>
+    <h2>最近比賽</h2><div class="mr-list">${S.gl.slice(0,5).map(g=>mrRow(g,sessById(g.session_id),mid)).join('')}</div>
+    ${S.gl.length>5?`<button class="btn wide ghost" data-act="tabRecords" style="margin-top:10px">看全部紀錄</button>`:''}`
+  :`<div class="card"><p class="empty">還沒有${SP[sp]}的正式比賽，打完第一場就會出現數據。</p></div>`}
+  <p class="mute" style="font-size:13px;margin-top:14px">平均搭檔／對手分數是每場比賽「賽前」的分數平均；得分率 = 你們隊得分 ÷ 雙方總分。</p>`}
+
 function vAvatar(){
   const d=UI.avd||(UI.avd=Object.assign({},avOf(user.id))),sp=UI.avSport||UI.form.sport,A=avRec(d.av),eqs=AVM.eq.filter(e=>e.sport===sp),cur=sp==='badminton'?d.bd:d.pb,E=eqRec(cur);
-  return `<h1>建立角色</h1><p class="sub">選擇出場角色與球拍。</p>
+  return `<button class="btn sm ghost" data-act="avEditOff">‹ 我的</button><h1 style="margin-top:10px">更換角色</h1><p class="sub">選擇出場角色與球拍。</p>
   <div class="hero" style="background:linear-gradient(0deg,var(--navy) 0%,transparent 55%),url(assets/ui/court_portrait_v001.webp) center/cover">${figure(d,sp)}<div class="who"><b>${esc(A.name)}</b><span class="mute">${E?esc(E.name)+'・'+SP[sp]:''}</span></div></div>
   <h2>角色預設</h2><div class="tiles">${AVM.av.map(a=>`<button class="tile ${d.av===a.id?'on':''}" data-act="avPick" data-v="${a.id}" aria-pressed="${d.av===a.id}"><img src="${a.head}" alt="">${d.av===a.id?'✓ ':''}${esc(a.name)}</button>`).join('')}</div>
   <h2>球拍</h2>${seg(sp,'avSport',[['pickleball','匹克球拍'],['badminton','羽球拍']])}
@@ -839,7 +887,7 @@ function render(){
   checkKicked();
   const v=UI.view;let html;
   if(v==='setup')html=vSetup();else if(v==='login')html=vLogin();else if(v==='nick')html=vNick();else if(v==='clubs')html=vClubs();
-  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:vRank,records:vRecords,members:vMembers,avatar:vAvatar}[UI.tab]||vToday)()}
+  else if(v==='club'&&club){html=({today:vToday,games:vRoom,create:vCreate,rank:vRank,records:vRecords,members:vMembers,avatar:()=>UI.avEdit?vAvatar():vMe()}[UI.tab]||vToday)()}
   else html=`<div class="empty">載入中…</div>`;
   $('#view').innerHTML=html;
   const inClub=v==='club'&&club;document.body.classList.toggle('nonav',!inClub);
@@ -861,7 +909,7 @@ const newCode=()=>'PS'+String(Math.floor(1000+Math.random()*9000));
 
 document.addEventListener('click',async e=>{
   const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
-  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar')UI.avd=null;ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
+  if(t.dataset.tab){UI.tab=t.dataset.tab;UI.detail=null;UI.edit=null;UI.game=null;UI.fill=null;if(UI.tab==='avatar'){UI.avd=null;UI.avEdit=false}ls.set('pbc-tab',UI.tab);closeModal();render();scrollTo(0,0);return}
   const a=t.dataset.act,id=t.dataset.id,v=t.dataset.v,s=live();
   try{switch(a){
     case 'close':closeModal();return;
@@ -958,6 +1006,11 @@ document.addEventListener('click',async e=>{
     /* 排名／紀錄 */
     case 'rs':UI.rankSport=v;break;
     case 'detF':UI.detMine=v==='mine';break;
+    case 'meSp':UI.meSport=v;break;
+    case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
+    case 'avEditOff':UI.avEdit=false;break;
+    case 'tabRank':UI.tab='rank';UI.rankSport=UI.meSport||UI.form.sport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
+    case 'tabRecords':UI.tab='records';UI.detail=null;ls.set('pbc-tab','records');scrollTo(0,0);break;
     case 'recF':UI.recSport=v;break;
     case 'detail':UI.detail=id;scrollTo(0,0);break;
     case 'back':UI.detail=null;break;
@@ -984,7 +1037,7 @@ document.addEventListener('click',async e=>{
     case 'eqStep':{const sp=UI.avSport||UI.form.sport,k=sp==='badminton'?'bd':'pb',l=AVM.eq.filter(e=>e.sport===sp),i=l.findIndex(e=>e.id===UI.avd[k]);UI.avd[k]=l[(i+(+v)+l.length)%l.length].id;break}
     case 'avSave':{t.disabled=true;const av={av:UI.avd.av,pb:UI.avd.pb,bd:UI.avd.bd,v:1};
       const {data,error}=await sb.from('profiles').update({avatar:av}).eq('id',user.id).select().single();if(error){toast(errMsg(error));t.disabled=false;return}
-      profile=data;avatars[user.id]=av;toast('角色已儲存！');break}
+      profile=data;avatars[user.id]=av;UI.avEdit=false;toast('角色已儲存！');break}
     default:return;
   }}catch(err){toast(errMsg(err));t.disabled=false;return}
   render();
