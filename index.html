@@ -793,14 +793,13 @@ const meRow=id=>{const m=myP();return m&&m.id===id?'me':''};
 /* ---------- 今日排行：只看這次活動（勝場／今日進步） ---------- */
 function todayBoard(s,open){const gl=gamesOf(s.id).filter(g=>g.status==='confirmed');if(!gl.length)return '';
   const st=statsOf(gl).map(x=>{let d=0;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id])d+=sn[x.id].a-sn[x.id].b});return Object.assign(x,{d})});
-  const mode=UI.tbMode||'up',mid=(myP()||{}).id;
+  const mode='up',mid=(myP()||{}).id;
   st.sort(mode==='up'?(x,y)=>(y.d-x.d)||(y.w-x.w):(x,y)=>(y.w-x.w)||(x.l-y.l)||((y.pf-y.pa)-(x.pf-x.pa))||(y.d-x.d));
   const md=['🥇','🥈','🥉'],live=s.status!=='done',n=open||UI.tbAll?st.length:Math.min(st.length,5);
-  return `<div class="mr-head"><h2>${live?'今日排行（即時）':'今日排行'}</h2><span class="mute">${gl.length} 場</span></div>
-  ${seg(mode,'tbMode',[['up','今日進步'],['win','勝場']])}
+  return `<div class="mr-head"><h2>${live?'今日戰力榜（即時）':'今日戰力榜'}</h2><span class="mute">${gl.length} 場</span></div>
   <div class="card tb">${st.slice(0,n).map((x,i)=>`<div class="item ${x.id===mid?'me':''} ${i<3?'tb-top':''}"><span class="rk">${i<3?md[i]:String(i+1).padStart(2,'0')}</span>${headImg(x.id)}<div class="grow"><b>${nm(x.id)}${x.id===mid?'（我）':''}</b><small>${x.w} 勝 ${x.l} 敗・淨${x.pf-x.pa>=0?'+':''}${x.pf-x.pa} 分</small></div><span class="mr-dl ${x.d>=0.0005?'up':x.d<=-0.0005?'down':''}">${fmtD(x.d)}</span></div>`).join('')}
   ${st.length>n?`<button class="btn wide ghost" data-act="tbAll" style="margin-top:8px">看全部 ${st.length} 人</button>`:''}</div>
-  <p class="mute" style="font-size:12px;margin-top:6px">${mode==='up'?'今日進步＝今天每場實力分數加減的總和：贏強隊加得多、輸給強隊扣得少，會看隊友和對手的強弱。':'依勝場排，同勝場比敗場少、再比淨勝分。'}右邊是今天的分數加減。</p>`}
+  <p class="mute" style="font-size:12px;margin-top:6px;line-height:1.6">計算方式：把今天每一場的實力分數加減加總，右邊就是今天的總加減，越多排越前面。<br>・贏球加分、輸球扣分，但會看隊友和對手的強弱：贏強隊加得多、輸給強隊扣得少<br>・比分差距也算進去：大勝加得多、小輸扣得少<br>・賽前兩隊平均差 0.5 以上、強隊又贏了，這場不加也不扣（DUPR 規則）</p>`}
 
 /* ---------- 天梯排行・全部球團（跨球團，用帳號 id 計算，同樣套用 DUPR 新規則） ---------- */
 const GL={};   // sport → {at, list, err}
@@ -910,7 +909,7 @@ function vDetail(s){
 }
 function report(s){
   const gl=gamesOf(s.id).filter(g=>g.status==='confirmed'),st=statsOf(gl),AB=ability(s.sport,s.id);
-  let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【今日排行・依今日進步】\n`;
+  let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【今日戰力榜】\n`;
   st.forEach(x=>{x.d=0;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id])x.d+=sn[x.id].a-sn[x.id].b})});
   st.slice().sort((x,y)=>(y.d-x.d)||(y.w-x.w)).forEach((x,i)=>{t+=`${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${pname(x.id)}  今日 ${fmtD(x.d)}  ${x.w}勝${x.l}敗${AB[x.id]?'  實力 '+AB[x.id].r.toFixed(3):''}\n`});
   t+='\n【各場比分】\n';gl.forEach(g=>t+=`${g.a.map(pname).join('/')} ${g.sa}-${g.sb} ${g.b.map(pname).join('/')}\n`);
