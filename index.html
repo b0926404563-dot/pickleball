@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.rp-row{gap:10px}.rp-row.is-ready{background:linear-gradient(90deg,rgba(110,231,168,.18),rgba(110,231,168,.04));box-shadow:inset 4px 0 0 #6EE7A8;border-radius:10px;padding-left:8px;padding-right:6px}
+.item[data-act]{cursor:pointer}.or-ven{font-weight:800;color:var(--y);font-size:14px;margin:2px 0}.lobby-alt{display:flex;justify-content:space-between;gap:10px;margin:8px 2px 0}.lobby-alt .vn-link{color:var(--mute);font-weight:700;text-decoration:underline;text-underline-offset:3px}.rp-row{gap:10px}.rp-row.is-ready{background:linear-gradient(90deg,rgba(110,231,168,.18),rgba(110,231,168,.04));box-shadow:inset 4px 0 0 #6EE7A8;border-radius:10px;padding-left:8px;padding-right:6px}
 .rp-ok{display:inline-block;margin-top:2px;padding:2px 9px;border-radius:999px;background:#6EE7A8;color:#0B2A1C;font-weight:900;font-size:12px}
 .rdy-bar{position:relative;margin:10px 0 4px;height:28px;border-radius:999px;background:#13304a;border:1px solid var(--line);overflow:hidden}.rdy-bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#3fbf86,#6EE7A8);transition:width .3s}.rdy-bar span{position:relative;display:flex;align-items:center;justify-content:center;height:100%;font-size:13px;font-weight:800;color:#F8FAFC;text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .btn.rdy-on{background:#6EE7A8;border-color:#6EE7A8;color:#0B2A1C;font-weight:900}.btn.rdy-on small{display:block;font-size:11px;font-weight:600;opacity:.8}
@@ -641,12 +641,12 @@ function vToday(){
     <div class="stats">${['pickleball','badminton'].map(sp=>`<div class="chip">${sp==='pickleball'?'匹克球':'羽球'}<b>${rt(sp)}</b>${A[sp][mid]?`<small class="relc">可靠度 ${relOf(mid,sp)}%</small>`:''}</div>`).join('')}</div></div>
   ${pendingCard()}
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
-  ${vnLobby(f.sport||'pickleball')}
-  <div class="row2" style="margin-top:14px"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
   ${rs.length?`<h2>開著的房間</h2>${rs.map(x=>{const n=playing(x).length,mine=inRoom(x,mid);
     return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${amHost(x)&&(x.pending||[]).length?' <span class="pill live">'+(x.pending||[]).length+' 人申請</span>':''}
-      <div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
+      ${(v=>v?`<div class="or-ven">📍 ${esc(v.name)}</div>`:'')(x.venue_id&&venById(x.venue_id))}<div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
       ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:(isPend(x,mid)?`<button class="btn sm" data-act="rcancel" data-id="${x.id}">取消申請</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">${amHost(x)||(x.present||[]).includes(mid)?'加入':'申請加入'}</button>`)}</div>${isPend(x,mid)?`<div class="pendbar">⏳ 已送出申請，等房主同意中…</div>`:''}</div>`}).join('')}`:''}
+  ${vnLobby(f.sport||'pickleball')}
+  <div class="lobby-alt"><button class="vn-link" data-act="newRoom">＋ 在其他場地開房</button><button class="vn-link" data-act="joinAsk">輸入房間代碼加入</button></div>
   <h2>近期戰績</h2><div class="card">${recent.length?recent.map(gameLine).join(''):'<p class="empty">還沒有正式戰績，開一場吧！</p>'}</div>`;
 }
 
