@@ -481,7 +481,10 @@ function counts(s,gl){
 function makeRound(s,gl,rn,R){
   const k=per(s),cu=courtsUsed(s);if(cu<1)return null;
   const c=counts(s,gl);
-  const order=shuffle(playing(s)).sort((x,y)=>((c.played[x]||0)-(c.played[y]||0))||(c.lastSat.has(y)-c.lastSat.has(x)));
+  const rns=[...new Set(gl.map(g=>g.rn))].sort((x,y)=>x-y),RS=rns.map(r=>new Set(gl.filter(g=>g.rn===r).flatMap(g=>[...g.a,...g.b])));
+  const st={};playing(s).forEach(p=>{let pr=0,sr=0,i=RS.length-1;while(i>=0&&RS[i].has(p)){pr++;i--}if(!pr)while(i>=0&&!RS[i].has(p)){sr++;i--}
+    const fi=RS.findIndex(x=>x.has(p)),n=fi<0?0:RS.slice(fi).filter(x=>x.has(p)).length;st[p]={pr,sr:fi<0?2:sr,rate:fi<0?0:n/(RS.length-fi)}});
+  const order=shuffle(playing(s)).sort((x,y)=>(st[y].sr-st[x].sr)||(st[x].pr-st[y].pr)||(st[x].rate-st[y].rate));
   const play=order.slice(0,cu*k);
   let best=null,bc=Infinity;
   for(let t=0;t<500;t++){
