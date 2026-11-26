@@ -445,7 +445,7 @@ function makeRound(s,gl,rn,R){
       const g=sh.slice(ci*k,ci*k+k),a=g.slice(0,k/2),b=g.slice(k/2);
       if(k===4){cost+=10*((c.partner[pk(a[0],a[1])]||0)+(c.partner[pk(b[0],b[1])]||0));cost+=6*(c.quad[[...a,...b].sort().join('|')]||0)}
       a.forEach(x=>b.forEach(y=>cost+=(k===4?2:5)*(c.opp[pk(x,y)]||0)));
-      const d=a.reduce((x,id)=>x+R(id),0)-b.reduce((x,id)=>x+R(id),0);cost+=30*d*d;
+      const d=a.reduce((x,id)=>x+R(id),0)-b.reduce((x,id)=>x+R(id),0);cost+=40*d*d;
       gs.push({a,b});
     }
     if(cost<bc){bc=cost;best=gs}
@@ -453,7 +453,7 @@ function makeRound(s,gl,rn,R){
   return best.map((g,i)=>({session_id:s.id,club_id:s.club_id,rn,court:i+1,a:g.a,b:g.b}));
 }
 async function genRounds(s,n,limit){
-  if(UI.gen)return;const gl=gamesOf(s.id).slice(),AB=ability(s.sport),R=id=>AB[id]?AB[id].b:0;
+  if(UI.gen)return;const gl=gamesOf(s.id).slice(),AB=ability(s.sport),GA=gAB(s.sport)||{},R=id=>GA[id]?GA[id].r:AB[id]?AB[id].r:3;
   let rn=Math.max(0,...gl.map(g=>g.rn));const rows=[];
   for(let i=0;i<n;i++){const r=makeRound(s,gl,++rn,R);if(!r)break;rows.push(...r);gl.push(...r)}
   if(limit>0&&rows.length>limit)rows.length=limit;
