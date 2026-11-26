@@ -196,9 +196,10 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.rv{display:flex;align-items:center;gap:12px;width:100%;margin:6px 0 8px;padding:8px 12px 8px 8px;border-radius:14px;border:1px solid rgba(253,224,71,.45);background:linear-gradient(120deg,rgba(253,224,71,.12),rgba(23,47,70,.7));color:var(--ink);font:inherit;text-align:left;cursor:pointer}
-.rv-art{flex:none;width:96px;aspect-ratio:16/9;border-radius:9px;overflow:hidden;background:#1c3e58;display:grid;place-items:center;color:#a9c9dd}.rv-art img{width:100%;height:100%;object-fit:contain;display:block}
-.rv-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}.rv-t small{display:flex;align-items:center;gap:3px;color:var(--y);font-size:11px;font-weight:800}.rv-t b{font-size:17px;line-height:1.25}.rv-t small:last-child{color:var(--mute);font-weight:600}.rv>svg{color:var(--mute);flex:none}
+.item[data-act]{cursor:pointer}.rv{display:block;width:100%;margin:12px 0 4px;padding:0;border-radius:18px;overflow:hidden;border:1px solid rgba(253,224,71,.5);background:linear-gradient(135deg,#294D69,#172F46);color:var(--ink);font:inherit;text-align:left;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.rv-body{display:flex;align-items:center;gap:10px;padding:10px 12px 12px}.rv-body>svg{color:var(--mute);flex:none}
+.rv-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.rv-t small{display:flex;align-items:center;gap:4px;color:var(--y);font-size:12px;font-weight:800}.rv-t b{font-size:21px;line-height:1.25;font-weight:900}
+.rv-sub{display:flex;align-items:center;flex-wrap:wrap;gap:4px;color:var(--mute);font-size:13px}.rv-sub svg{color:var(--y)}.rv-sub i{font-style:normal}
 .rv-plain{margin:4px 0 6px;font-weight:700}.rv-plain small{color:var(--mute);font-weight:500}
 .mr-where{display:block;margin-top:3px;color:var(--ink);font-weight:700;font-size:14px}.mr-where small{margin-left:8px;color:var(--mute);font-weight:500;font-size:12px}.tb-ba{font-variant-numeric:tabular-nums}.tb-ba b{color:var(--ink);font-size:inherit}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
 .inv-pop{text-align:center}.inv-ic{font-size:44px;line-height:1;animation:invb 1s ease-in-out infinite alternate}.inv-pop h3{margin:8px 0 6px;font-size:22px}.inv-room{margin:0 0 14px}.inv-room b{font-size:18px;color:var(--y)}@keyframes invb{to{transform:translateY(-6px) rotate(8deg)}}
@@ -754,9 +755,11 @@ function reqCard(s){if(!amHost(s))return '';const pd=(s.pending||[]).filter(P);
 function roomMsg(x){const v=x.venue_id&&venById(x.venue_id),hp=players.find(p=>p.user_id===x.created_by);
   return `🏓 ${hp?hp.name:''} 開了${SP[x.sport]}房間「${roomName(x)}」${v?'\n📍 '+v.name:x.place?'\n📍 '+x.place:''}\n點連結加入（房主同意後就會進房）：\n${location.origin+location.pathname}?join=${club.join_code}&room=${x.id}${x.code?'\n房間代碼 '+x.code:''}`}
 // 房間在哪個道館（點了進道館頁）
-function roomVenue(s){const v=s.venue_id&&venById(s.venue_id),hp=players.find(p=>p.user_id===s.created_by),host=hp?`<small>${s.created_by===user.id?'我':esc(hp.name)} 開團</small>`:'';
-  if(v)return `<button class="rv" data-act="venGo" data-id="${v.id}"><span class="rv-art">${v.art?`<img src="${esc(v.art)}" alt="" loading="lazy">`:ic('court',22)}</span><span class="rv-t"><small>${ic('pin',12)} 道館・${esc(v.city)}</small><b>${esc(v.name)}</b>${host}</span>${ic('chev',18)}</button>`;
-  return s.place?`<p class="rv-plain">📍 ${esc(s.place)}${host?' ・'+host:''}</p>`:''}
+function roomVenue(s){const v=s.venue_id&&venById(s.venue_id),hp=players.find(p=>p.user_id===s.created_by),hn=s.created_by===user.id?'我':hp?esc(hp.name):'';
+  if(v){const B=vnBoard(v.id,s.sport),bs=B.boss;if(bs)needPeople([bs.uid]);
+    return `<button class="rv" data-act="venGo" data-id="${v.id}" aria-label="查看道館 ${esc(v.name)}">${vnMedia(v)}
+      <span class="rv-body"><span class="rv-t"><small>${ic('flag',13)} 今天的道館</small><b>${esc(v.name)}</b><span class="rv-sub">${bs?`${ic('crown',13)} 館主 ${bs.uid===user.id?'我':uName(bs.uid)}・${bs.r.toFixed(3)}`:`${ic('crown',13)} 館主從缺`}${hn?`<i>・${hn} 開團</i>`:''}</span></span>${ic('chev',20)}</span></button>`}
+  return s.place||hn?`<p class="rv-plain">${s.place?'📍 '+esc(s.place):''}${hn?`<small>${s.place?'・':''}${hn} 開團</small>`:''}</p>`:''}
 const invCard=s=>{if(!amHost(s))return '';const iv=(s.invited||[]).filter(P);return iv.length?`<div class="inv-wait"><small class="mute">已邀請，等對方回覆</small>${iv.map(id=>`<span class="inv-chip">${headImg(id,'s')}${nm(id)}<button aria-label="取消邀請 ${esc(pname(id))}" data-act="uninvite" data-id="${id}">×</button></span>`).join('')}</div>`:''};
 const addBtn=s=>amHost(s)?`${invCard(s)}<button class="btn wide" data-act="addAsk" style="margin-top:10px">＋ 邀請球友進房間</button>`:'';
 async function joinRoom(sid){
@@ -774,7 +777,7 @@ function vWait(s){
   const me=myP(),mid=me&&me.id,host=isHost(s),k=per(s),ids=(s.present||[]).filter(P),rd=s.ready||[],nr=ids.filter(id=>rd.includes(id)).length,inR=inRoom(s,mid);
   const hostP=players.find(x=>x.user_id===s.created_by);
   return `<button class="btn sm ghost" data-tab="today">‹ 對戰大廳</button>
-  <h1 style="margin-top:10px">房間等待中</h1>${roomVenue(s)}<p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}</p>
+  ${roomVenue(s)}<h1 style="margin-top:10px">房間等待中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}</p>
   <div class="card split"><div><small class="mute">房間代碼</small><div class="code">${esc(s.code||'——')}</div></div><button class="btn sm" data-act="copyCode" data-id="${s.id}">複製代碼</button></div>
   ${reqCard(s)}
   <div class="card"><div class="split"><h3 style="margin:0">球員（${ids.length}）</h3><span class="pill ${nr===ids.length&&ids.length?'ok':''}">${nr} / ${ids.length} 人已準備</span></div>
@@ -795,7 +798,7 @@ function vPlay(s){
   const waitIds=playing(s).filter(id=>!busy.has(id)),done=gl.filter(g=>g.status!=='open').reverse();
   const startBtn=g=>host?`<button class="btn sm ${g===rec?'pri':''}" data-act="gStart" data-id="${g.id}" ${!fc||[...g.a,...g.b].some(id=>busy.has(id))?'disabled':''}>開始這場</button>`:'';
   return `<button class="btn sm ghost" data-tab="today">‹ 對戰大廳</button>
-  <h1 style="margin-top:10px">房間比賽中</h1>${roomVenue(s)}<p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
+  ${roomVenue(s)}<h1 style="margin-top:10px">房間比賽中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
   <p style="margin:-6px 0 12px"><span class="pill y">已打 ${done.length} 場${(s.cfg&&+s.cfg.games)?` / 今天 ${+s.cfg.games} 場`:''}・還有 ${q.length+on.length} 場</span></p>
   ${reqCard(s)}
   ${pendingCard()}
@@ -1034,7 +1037,7 @@ function vDetail(s){
   const mid=(myP()||{}).id,inG=g=>!!mid&&[...g.a,...g.b].includes(mid),mg=gl.filter(inG),myN=mg.length,mc=mg.filter(g=>g.status==='confirmed'),myC=mc.length,myW=mc.filter(g=>(g.a.includes(mid))===(g.sa>g.sb)).length;
   const shown=UI.detMine&&myN?mg:gl;
   return `<button class="btn sm ghost" data-act="back">‹ 所有紀錄</button>
-  <h1 style="margin-top:10px">${esc(roomName(s))}</h1>${roomVenue(s)}<p class="sub">${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}・${modeTxt(s)}・${ruleTxt(s)}</p>
+  ${roomVenue(s)}<h1 style="margin-top:10px">${esc(roomName(s))}</h1><p class="sub">${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}・${modeTxt(s)}・${ruleTxt(s)}</p>
   ${myN?`<div class="mr-sum"><span>我打了 <strong>${myC}</strong> 場</span><span class="mr-tot"><span class="w">${myW} 勝</span><span class="l">${myC-myW} 敗</span></span>${myN>myC?`<small class="mute" style="flex-basis:100%">另有 ${myN-myC} 場待確認</small>`:''}</div>`:`<p class="mute" style="margin:6px 0 0">這次你沒有上場。</p>`}
   ${todayBoard(s,true)}
   <div class="mr-head"><h2>比賽紀錄</h2><span class="mute">${UI.detMine&&myN?`其中 ${myN} 場有我`:`共 ${gl.length} 場`}</span></div>
