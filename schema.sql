@@ -813,3 +813,6 @@ grant execute on function global_ladder(text) to authenticated;
 
 -- V014：華府面數暫不顯示（各來源不一致：場地資料寫 2 面、實景插畫可見 4 面，待確認正式面數）
 update venues set courts = null where id = 'tn-huafu';
+
+-- V015：華府匹克球球場 4 面（使用者確認）
+update venues set courts = 4 where id = 'tn-huafu';
