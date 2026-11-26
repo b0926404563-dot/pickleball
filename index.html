@@ -298,7 +298,7 @@ h1.vn-h1{margin-top:0}
 .vs-team{display:flex;flex-direction:column;gap:6px;padding:10px 10px 12px;border-radius:14px;min-width:0}
 .vs-team.a{background:linear-gradient(160deg,rgba(127,178,255,.32),rgba(127,178,255,.06));border:1px solid rgba(127,178,255,.55);clip-path:polygon(0 0,100% 0,88% 100%,0 100%);padding-right:18px}
 .vs-team.b{background:linear-gradient(200deg,rgba(255,154,108,.32),rgba(255,154,108,.06));border:1px solid rgba(255,154,108,.55);clip-path:polygon(12% 0,100% 0,100% 100%,0 100%);padding-left:18px;text-align:right}
-.vs-team.mine{box-shadow:0 0 0 2px var(--y) inset}
+.vs-team.vs-myteam{box-shadow:0 0 0 2px var(--y) inset}
 .vs-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px}.vs-team.b .vs-head{flex-direction:row-reverse}
 .vs-lab{font-size:13px;font-weight:900;letter-spacing:.06em}.vs-team.a .vs-lab{color:var(--a)}.vs-team.b .vs-lab{color:var(--b)}
 .vs-pow{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;color:#F8FAFC;line-height:1}.vs-pow small{font-size:10px;font-weight:700;color:var(--mute);margin-right:3px}
@@ -585,7 +585,7 @@ function winProb(rA,rB,s){const d=(rA.reduce((t,r)=>t+(r-3)/RK,0)-rB.reduce((t,r
   try{return f(0,0)}catch(e){return p}}
 function matchRow(g,s,mid,score){const R=ability((s&&s.sport)||'pickleball'),rt=id=>{const v=pRate(g,id);return v==null?null:v},val=id=>{const v=rt(id);return v==null?3:v};
   const avg=ids=>ids.reduce((t,id)=>t+val(id),0)/ids.length,pa=winProb(g.a.map(val),g.b.map(val),s),A=Math.round(pa*100);
-  const team=(k,ids)=>`<div class="vs-team ${k} ${ids.includes(mid)?'mine':''}"><div class="vs-head"><span class="vs-lab">${k==='a'?'A':'B'} 隊</span><span class="vs-pow"><small>戰力</small>${avg(ids).toFixed(2)}</span></div>
+  const team=(k,ids)=>`<div class="vs-team ${k} ${ids.includes(mid)?'vs-myteam':''}"><div class="vs-head"><span class="vs-lab">${k==='a'?'A':'B'} 隊</span><span class="vs-pow"><small>戰力</small>${avg(ids).toFixed(2)}</span></div>
     ${ids.map(id=>{const r=rt(id);return `<div class="vs-p ${id===mid?'me':''}">${headImg(id)}<div><b>${nm(id)}</b><small>${r==null?'未定級':r.toFixed(3)}</small></div></div>`}).join('')}</div>`;
   return `<div class="vsx">${team('a',g.a)}<div class="vs-mid"><span class="vs-badge">${score?`<em>${score}</em>`:'VS'}</span></div>${team('b',g.b)}
     <div class="vs-bar" aria-label="預測勝率 A 隊 ${A}%、B 隊 ${100-A}%"><span class="pa">${A}%</span><div><i style="width:${A}%"></i></div><span class="pb">${100-A}%</span></div><small class="vs-note">預測勝率（依雙方實力分數）</small></div>`}
