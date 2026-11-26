@@ -1007,7 +1007,7 @@ function vnChallenge(B){const top=B.live[0];if(!top)return '';const bs=B.boss,nm
 function vnMe(B){const me=user.id,i=B.live.findIndex(x=>x.uid===me),p=B.pend.find(x=>x.uid===me);
   if(B.boss&&B.boss.uid===me)return {k:'boss',t:'你是本週館主',s:B.boss.weeks>1?`連任 ${B.boss.weeks} 週`:''};
   if(i>=0){const x=B.live[i];return {k:'rank',t:`挑戰榜第 ${i+1} 名 / ${B.live.length} 人`,s:`近 30 天 ${fmtD(x.sum)}`}}
-  if(p)return {k:'pend',t:`近 30 天再打 ${VMIN-p.n} 場就能挑戰`,s:`近 30 天打了 ${p.n} 場`};
+  if(p)return {k:'pend',t:`再打 ${VMIN-p.n} 場就能爭館主`,s:`近 30 天打了 ${p.n} 場`};
   if(B.ranked.some(x=>x.uid===me))return {k:'pend',t:'近 30 天沒來打',s:`回來打 ${VMIN} 場就能挑戰館主`};
   return {k:'new',t:'還沒來過',s:`近 30 天在這裡打滿 ${VMIN} 場就能挑戰館主`}}
 function vnOwner(B,big){const b=B.boss,self=b&&b.uid===user.id;if(b)needPeople([b.uid]);
@@ -1049,8 +1049,8 @@ function vVenue(vid){const v=venById(vid);if(!v){UI.venue=null;return vRank()}
   <section class="vn-board"><div class="vn-section-head"><h2>挑戰者排行</h2><span>近 30 天進步・即時</span></div>
     <div class="vn-panel">${B.live.length?`<ol class="vn-ranking">${B.live.map((x,i)=>row(x,i,{t:fmtD(x.sum),c:x.sum>=0.0005?'up':x.sum<=-0.0005?'down':''},`近 30 天 ${x.n} 場`)).join('')}</ol>`
       :`<p class="vn-note">近 30 天還沒有人在這裡打滿 ${VMIN} 場。</p>`}</div></section>
-  <section class="vn-board"><div class="vn-section-head"><h2>還差幾場挑戰</h2><span>近 30 天打滿 ${VMIN} 場</span></div>
-    <div class="vn-panel">${B.pend.length?`<ul class="vn-queue">${B.pend.map(x=>`<li class="vn-queue-row" data-act="person" data-id="${x.uid}" role="button" tabindex="0">${vnHead(x.uid)}<div><strong>${uName(x.uid)}${x.uid===user.id?'（我）':''}</strong><small>近 30 天 ${x.n} / ${VMIN} 場</small></div><b>差 ${VMIN-x.n} 場</b></li>`).join('')}</ul>`:'<p class="vn-note">目前沒有待挑戰的球友。</p>'}</div></section>
+  ${B.pend.length?`<section class="vn-board"><div class="vn-section-head"><h2>再打幾場就能爭館主</h2><span>近 30 天打滿 ${VMIN} 場才上挑戰榜</span></div>
+    <div class="vn-panel"><ul class="vn-queue">${B.pend.map(x=>`<li class="vn-queue-row" data-act="person" data-id="${x.uid}" role="button" tabindex="0">${vnHead(x.uid)}<div><strong>${uName(x.uid)}${x.uid===user.id?'（我）':''}</strong><small>近 30 天打了 ${x.n} 場</small></div><b>再 ${VMIN-x.n} 場</b></li>`).join('')}</ul></div></section>`:''}
   <section class="vn-board"><div class="vn-section-head"><h2>道館高手榜</h2><span>依實力分數・打滿 ${VMIN} 場</span></div>
     <div class="vn-panel">${B.ranked.length?`<ol class="vn-ranking">${B.ranked.map((x,i)=>row(x,i,{t:x.r.toFixed(3)},`在這裡 ${x.n} 場`)).join('')}</ol>`:`<p class="vn-note">還沒有人在這裡打滿 ${VMIN} 場正式比賽。</p>`}</div></section>
   <details class="vn-rules"><summary>館主規則</summary><p>每週一 00:00 結算一次：看「近 30 天在這個道館的比賽」實力分數加減總和，至少打 ${VMIN} 場，總和最高的人就是這一週的館主，到下週一才可能換人。加減分會看隊友和對手強弱，高手贏弱隊幾乎不加分，所以每個人都有機會。挑戰者排行是即時的，看得到誰快要超過館主。道館高手榜則是依實力分數排的參考榜。</p></details>
