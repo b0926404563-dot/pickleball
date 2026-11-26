@@ -280,7 +280,7 @@ h1.vn-h1{margin-top:0}
 .vn-ranking small,.vn-queue small{display:block;color:var(--vn-muted);font-size:12px}
 .vn-note{color:var(--vn-muted);padding:12px;margin:0}
 .vn-rules{margin:10px 0;color:var(--vn-muted);font-size:13px}.vn-rules summary{min-height:44px;display:list-item;align-content:center;cursor:pointer}.vn-rules p{padding:0 0 10px;margin:0;line-height:1.6}
-.vn-sticky{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));display:grid;gap:3px;background:#102a43;padding:8px 0;z-index:2;border-top:1px solid var(--vn-edge);text-align:center}
+.vn-sticky{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom));display:grid;gap:3px;background:#102a43;padding:8px 0;z-index:2;border-top:1px solid var(--vn-edge);text-align:center}
 .vn-sticky .vn-button{min-height:48px;font-size:15px}.vn-sticky span{font-size:11px;color:var(--vn-muted)}
 #view :focus-visible{outline:2px solid var(--vn-gold);outline-offset:2px}
 </style>
@@ -649,7 +649,7 @@ async function loadGRows(){{const {data}=await sb.from('venues').select('*').eq(
   const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});
   if(error){GROWS[sp]=null;continue}
   GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',venue:r.venue||null,host:r.host||null,place:r.place||'',sport:sp}))}
-  for(const k in EXC)delete EXC[k]}
+  for(const k in EXC)delete EXC[k];if(UI.view==='club'&&club)setTimeout(soft,0)}
 const uidOf=pid=>{const p=players.find(x=>x.id===pid);return p&&p.user_id};
 function ability(sport,onlySid,lam=3,o={}){
   const R=GROWS[sport];if(onlySid||!R)return abilityLocal(sport,onlySid,lam,o);
