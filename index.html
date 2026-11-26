@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.tb-ba{font-variant-numeric:tabular-nums}.tb-ba b{color:var(--ink);font-size:inherit}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
+.item[data-act]{cursor:pointer}.mr-where{display:block;margin-top:3px;color:var(--ink);font-weight:700;font-size:14px}.mr-where small{margin-left:8px;color:var(--mute);font-weight:500;font-size:12px}.tb-ba{font-variant-numeric:tabular-nums}.tb-ba b{color:var(--ink);font-size:inherit}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
 .inv-pop{text-align:center}.inv-ic{font-size:44px;line-height:1;animation:invb 1s ease-in-out infinite alternate}.inv-pop h3{margin:8px 0 6px;font-size:22px}.inv-room{margin:0 0 14px}.inv-room b{font-size:18px;color:var(--y)}@keyframes invb{to{transform:translateY(-6px) rotate(8deg)}}
 .addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
 .vn-art{aspect-ratio:16/9;width:100%;background:center/cover no-repeat}.vn-art.big{border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.35)}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
@@ -581,7 +581,7 @@ async function loadGRows(){{const {data}=await sb.from('venues').select('*').eq(
   for(const sp of ['pickleball','badminton']){
   const {data,error}=await sb.rpc('global_ladder',{p_sport:sp});
   if(error){GROWS[sp]=null;continue}
-  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',venue:r.venue||null,sport:sp}))}
+  GROWS[sp]=(data||[]).filter(r=>r.a&&r.b&&r.a.length&&r.a.length===r.b.length).map(r=>({id:r.gid,a:r.a,b:r.b,sa:r.sa,sb:r.sb,ended_at:r.t,created_at:r.t,status:'confirmed',club:r.club||'',venue:r.venue||null,host:r.host||null,place:r.place||'',sport:sp}))}
   for(const k in EXC)delete EXC[k]}
 const uidOf=pid=>{const p=players.find(x=>x.id===pid);return p&&p.user_id};
 function ability(sport,onlySid,lam=3,o={}){
@@ -898,7 +898,7 @@ function vRecords(){
   if(UI.detail){const s=sessById(UI.detail);if(s)return vDetail(s);UI.detail=null}
   const flt=UI.recSport||'all',mine=myGames(flt==='all'?null:flt),me=myP(),w=mine.filter(g=>{const sd=sideOf(g,me.id);return sd==='a'?g.sa>g.sb:g.sb>g.sa}).length;
   const GA=(GROWS.pickleball&&GROWS.badminton)?(flt==='all'?['pickleball','badminton']:[flt]).flatMap(sp=>myGlobal(sp)||[]).sort((x,y)=>gTime(y.g)-gTime(x.g)):null;
-  if(GA)needPeople(GA.slice(0,10).flatMap(x=>[...x.g.a,...x.g.b]));
+  if(GA)needPeople(GA.slice(0,10).flatMap(x=>[...x.g.a,...x.g.b,x.g.host]));
   const gN=GA?GA.length:mine.length,gW=GA?GA.filter(x=>(x.g.a.includes(user.id))===(x.g.sa>x.g.sb)).length:w;
   const logs=sessions.filter(x=>x.status!=='lobby'&&(x.status==='live'||played(x)));
   return `<h1>歷史紀錄</h1><p class="sub">我的正式戰績・所有球團合計</p>
@@ -976,7 +976,7 @@ function userGlobal(sp,uid){const G=GROWS[sp];if(!G||!uid)return null;
 function mrRowG(x,uid){const g=x.g,inA=g.a.includes(uid),aw=g.sa>g.sb,won=inA?aw:!aw,d=x.after-x.be[uid],local=games.some(o=>o.id===g.id);
   const team=(lab,ids,sc,w)=>`<div class="mr-team ${w?'team-won':''}"><span class="mr-tid">${lab}</span><span class="mr-players">${ids.map(u=>`<span class="mr-p ${u===uid?'is-self':''}">${u===user.id?'我':uName(u)}</span>`).join('<span aria-hidden="true">・</span>')}</span><span class="mr-score">${w?'<span class="mr-win">勝</span>':''}<span>${sc}</span></span></div>`;
   return `<${local?'button':'div'} class="mr-row is-mine ${won?'is-win':'is-loss'}" ${local?`data-act="openGame" data-id="${g.id}"`:''}>
-    <div class="mr-meta"><span class="mr-id">${D(g.ended_at)}・${esc(g.club||'')}・${g.a.length===1?'單打':'雙打'}</span><span class="mr-tags">${x.skip?'<span class="mr-dl">不計分</span>':`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`}<span class="mr-res">${won?'勝':'敗'}</span></span></div>
+    <div class="mr-meta"><span class="mr-id">${D(g.ended_at)}・${g.a.length===1?'單打':'雙打'}<span class="mr-where">${(v=>v?'📍 '+esc(v.name):g.place?'📍 '+esc(g.place):esc(g.club||''))(g.venue&&venById(g.venue))}${g.host?`<small>${g.host===user.id?'我':uName(g.host)} 開團</small>`:''}</span></span><span class="mr-tags">${x.skip?'<span class="mr-dl">不計分</span>':`<span class="mr-dl ${d>=0.0005?'up':d<=-0.0005?'down':''}">${fmtD(d)}</span>`}<span class="mr-res">${won?'勝':'敗'}</span></span></div>
     ${team('A',g.a,g.sa,aw)}${team('B',g.b,g.sb,!aw)}</${local?'button':'div'}>`}
 
 function gStats(MG,uid,hi){let w=0,pf=0,pa=0,pS=0,pN=0,oS=0,oN=0;const lv={up:[0,0],eq:[0,0],dn:[0,0]};
@@ -998,7 +998,7 @@ function vPerson(uid){
   const sp=UI.rankSport,self=uid===user.id,R=gAB(sp),cur=R&&R[uid],L=userGlobal(sp,uid);
   const bk=UI.venue&&venById(UI.venue)?'‹ '+esc(venById(UI.venue).name):'‹ 天梯排行';if(!L)return `<button class="btn sm ghost" data-act="pBack">${bk}</button><div class="card" style="margin-top:10px"><p class="empty">載入中…</p></div>`;
   const S=gStats(L,uid,cur?cur.r:null),rel=relU(uid,sp),f3=x=>x==null?'—':x.toFixed(3),n=10;
-  needPeople([uid,...L.slice(0,n).flatMap(x=>[...x.g.a,...x.g.b])]);
+  needPeople([uid,...L.slice(0,n).flatMap(x=>[...x.g.a,...x.g.b,x.g.host])]);
   const tile=(v,l)=>`<div class="pf-tile"><b>${v}</b><span>${l}</span></div>`;
   const lvRow=(k,lab,desc)=>{const [a,b]=S.lv[k],m=a+b;return `<div class="pf-lv"><div><b>${lab}</b><small>${desc}</small></div><div class="pf-bar"><i style="width:${m?100*a/m:0}%"></i></div><span>${a} 勝 ${b} 敗</span></div>`};
   // 我和他：同隊／對手（從我的角度算勝敗）
@@ -1028,7 +1028,7 @@ function myStats(sp,mid){
     MG.forEach(x=>{const g=x.g,inA=g.a.includes(uid),mine=inA?g.a:g.b,opp=inA?g.b:g.a,ms=inA?g.sa:g.sb,os=inA?g.sb:g.sa,won=ms>os,b=u=>x.be[u];
       if(won)w++;pf+=ms;pa+=os;mine.filter(u=>u!==uid).forEach(u=>{pS+=b(u);pN++});opp.forEach(u=>{oS+=b(u);oN++});hi=Math.max(hi==null?0:hi,x.after);
       const oAvg=opp.reduce((t,u)=>t+b(u),0)/opp.length,k=oAvg>b(uid)+0.25?'up':oAvg<b(uid)-0.25?'dn':'eq';lv[k][won?0:1]++});
-    needPeople(MG.slice(0,5).flatMap(x=>[...x.g.a,...x.g.b]));
+    needPeople(MG.slice(0,5).flatMap(x=>[...x.g.a,...x.g.b,x.g.host]));
     const rated=Object.keys(AB).filter(P),below=me?rated.filter(id=>AB[id].r<me.r).length:0;
     return {AB,me,gl:MG,global:true,w,l:MG.length-w,pct:pf+pa?100*pf/(pf+pa):null,avgP:pN?pS/pN:null,avgO:oN?oS/oN:null,hi,lv,clubs:new Set(MG.map(x=>x.g.club)).size,
       beat:me&&rated.length>1?Math.round(100*below/(rated.length-1)):null,rank:me?rated.filter(id=>AB[id].r>me.r).length+1:null,n:rated.length,rel:relOf(mid,sp),ex}}
