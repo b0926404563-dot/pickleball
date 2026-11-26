@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
+.item[data-act]{cursor:pointer}.tb-ba{font-variant-numeric:tabular-nums}.tb-ba b{color:var(--ink);font-size:inherit}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
 .inv-pop{text-align:center}.inv-ic{font-size:44px;line-height:1;animation:invb 1s ease-in-out infinite alternate}.inv-pop h3{margin:8px 0 6px;font-size:22px}.inv-room{margin:0 0 14px}.inv-room b{font-size:18px;color:var(--y)}@keyframes invb{to{transform:translateY(-6px) rotate(8deg)}}
 .addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
 .vn-art{height:92px;background:center/cover no-repeat}.vn-art.big{height:150px;border-radius:18px}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
@@ -791,15 +791,38 @@ function statsOf(gl){
 }
 const meRow=id=>{const m=myP();return m&&m.id===id?'me':''};
 /* ---------- 今日排行：只看這次活動（勝場／今日進步） ---------- */
-function todayBoard(s,open){const gl=gamesOf(s.id).filter(g=>g.status==='confirmed');if(!gl.length)return '';
-  const st=statsOf(gl).map(x=>{let d=0;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id])d+=sn[x.id].a-sn[x.id].b});return Object.assign(x,{d})});
-  const mode='up',mid=(myP()||{}).id;
-  st.sort(mode==='up'?(x,y)=>(y.d-x.d)||(y.w-x.w):(x,y)=>(y.w-x.w)||(x.l-y.l)||((y.pf-y.pa)-(x.pf-x.pa))||(y.d-x.d));
+function dayRows(s){const gl=gamesOf(s.id).filter(g=>g.status==='confirmed').sort(gOrder);if(!gl.length)return null;
+  const st=statsOf(gl).map(x=>{let b=null,a=null;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id]){if(b==null)b=sn[x.id].b;a=sn[x.id].a}});return Object.assign(x,{b,a,d:b==null?0:a-b})});
+  st.sort((x,y)=>(y.d-x.d)||(y.w-x.w));return {gl,st}}
+function todayBoard(s,open){const R=dayRows(s);if(!R)return '';const {gl,st}=R,mid=(myP()||{}).id;
   const md=['🥇','🥈','🥉'],live=s.status!=='done',n=open||UI.tbAll?st.length:Math.min(st.length,5);
   return `<div class="mr-head"><h2>${live?'今日戰力榜（即時）':'今日戰力榜'}</h2><span class="mute">${gl.length} 場</span></div>
-  <div class="card tb">${st.slice(0,n).map((x,i)=>`<div class="item ${x.id===mid?'me':''} ${i<3?'tb-top':''}"><span class="rk">${i<3?md[i]:String(i+1).padStart(2,'0')}</span>${headImg(x.id)}<div class="grow"><b>${nm(x.id)}${x.id===mid?'（我）':''}</b><small>${x.w} 勝 ${x.l} 敗・淨${x.pf-x.pa>=0?'+':''}${x.pf-x.pa} 分</small></div><span class="mr-dl ${x.d>=0.0005?'up':x.d<=-0.0005?'down':''}">${fmtD(x.d)}</span></div>`).join('')}
+  <div class="card tb">${st.slice(0,n).map((x,i)=>`<div class="item ${x.id===mid?'me':''} ${i<3?'tb-top':''}"><span class="rk">${i<3?md[i]:String(i+1).padStart(2,'0')}</span>${headImg(x.id)}<div class="grow"><b>${nm(x.id)}${x.id===mid?'（我）':''}</b><small>${x.b!=null?`<span class="tb-ba">${x.b.toFixed(3)} → <b>${x.a.toFixed(3)}</b></span><br>`:''}${x.w} 勝 ${x.l} 敗・淨${x.pf-x.pa>=0?'+':''}${x.pf-x.pa} 分</small></div><span class="mr-dl ${x.d>=0.0005?'up':x.d<=-0.0005?'down':''}">${fmtD(x.d)}</span></div>`).join('')}
   ${st.length>n?`<button class="btn wide ghost" data-act="tbAll" style="margin-top:8px">看全部 ${st.length} 人</button>`:''}</div>
-  <p class="mute" style="font-size:12px;margin-top:6px;line-height:1.6">計算方式：把今天每一場的實力分數加減加總，右邊就是今天的總加減，越多排越前面。<br>・贏球加分、輸球扣分，但會看隊友和對手的強弱：贏強隊加得多、輸給強隊扣得少<br>・比分差距也算進去：大勝加得多、小輸扣得少<br>・賽前兩隊平均差 0.5 以上、強隊又贏了，這場不加也不扣（DUPR 規則）</p>`}
+  <button class="btn wide" data-act="dayImg" data-id="${s.id}" style="margin-top:10px">📸 產生戰報圖片</button>
+  <p class="mute" style="font-size:12px;margin-top:6px;line-height:1.6">計算方式：今天打完的分數 − 今天第一場前的分數，右邊就是今天的總加減，越多排越前面。<br>・贏球加分、輸球扣分，但會看隊友和對手的強弱：贏強隊加得多、輸給強隊扣得少<br>・比分差距也算進去：大勝加得多、小輸扣得少<br>・賽前兩隊平均差 0.5 以上、強隊又贏了，這場不加也不扣（DUPR 規則）</p>`}
+/* 戰報圖片（canvas → PNG，可分享到 LINE 或存到相簿） */
+const loadImg=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+async function dayImage(s){const R=dayRows(s);if(!R)return null;const {gl,st}=R,W=1080,rowH=132,top=330,H=top+st.length*rowH+150;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d'),F='"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif';
+  const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#1E4466');g.addColorStop(1,'#0B1A2C');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.fillStyle='#FDE047';x.font=`italic 900 44px ${F}`;x.fillText('PickleScore',60,90);
+  x.fillStyle='#F8FAFC';x.font=`900 64px ${F}`;x.fillText('今日戰力榜',60,175);
+  const v=s.venue_id&&venById(s.venue_id),sub=`${D(s.started_at)}・${SP[s.sport]}・${gl.length} 場${v?'・'+v.name:s.place?'・'+s.place:''}`;
+  x.fillStyle='#B7CBE0';x.font=`500 32px ${F}`;x.fillText(sub,60,230);x.fillText(roomName(s),60,276);
+  const md=['🥇','🥈','🥉'];
+  for(let i=0;i<st.length;i++){const p=st[i],y=top+i*rowH;
+    x.fillStyle=i%2?'rgba(255,255,255,.03)':'rgba(255,255,255,.07)';x.beginPath();x.roundRect(40,y,W-80,rowH-14,24);x.fill();
+    x.textBaseline='middle';const cy=y+(rowH-14)/2;
+    x.font=i<3?`64px ${F}`:`900 40px ${F}`;x.fillStyle='#B7CBE0';x.textAlign='center';x.fillText(i<3?md[i]:String(i+1),105,cy+2);x.textAlign='left';
+    const im=await loadImg(avRec(avP(p.id).av).head);x.save();x.beginPath();x.arc(205,cy,44,0,7);x.closePath();x.fillStyle='#294D69';x.fill();x.clip();if(im)x.drawImage(im,161,cy-44,88,88);x.restore();
+    x.fillStyle='#F8FAFC';x.font=`800 40px ${F}`;x.fillText(pname(p.id),275,cy-24);
+    x.fillStyle='#B7CBE0';x.font=`500 28px ${F}`;x.fillText(p.b!=null?`${p.b.toFixed(3)} → ${p.a.toFixed(3)}　${p.w}勝${p.l}敗`:`${p.w}勝${p.l}敗`,275,cy+26);
+    const up=p.d>=0.0005,dn=p.d<=-0.0005,t=fmtD(p.d);x.font=`900 46px ${F}`;const tw=x.measureText(t).width;
+    x.fillStyle=up?'rgba(110,231,168,.18)':dn?'rgba(255,181,174,.18)':'rgba(255,255,255,.08)';x.beginPath();x.roundRect(W-80-tw-48,cy-36,tw+40,72,18);x.fill();
+    x.fillStyle=up?'#6EE7A8':dn?'#FFB5AE':'#F8FAFC';x.fillText(t,W-80-tw-28,cy+2);x.textBaseline='alphabetic'}
+  x.fillStyle='#B7CBE0';x.font=`500 24px ${F}`;x.fillText('右邊＝今天的分數加減（會看隊友與對手強弱）',60,H-70);
+  return c}
 
 /* ---------- 天梯排行・全部球團（跨球團，用帳號 id 計算，同樣套用 DUPR 新規則） ---------- */
 const GL={};   // sport → {at, list, err}
@@ -910,8 +933,7 @@ function vDetail(s){
 function report(s){
   const gl=gamesOf(s.id).filter(g=>g.status==='confirmed'),st=statsOf(gl),AB=ability(s.sport,s.id);
   let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【今日戰力榜】\n`;
-  st.forEach(x=>{x.d=0;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id])x.d+=sn[x.id].a-sn[x.id].b})});
-  st.slice().sort((x,y)=>(y.d-x.d)||(y.w-x.w)).forEach((x,i)=>{t+=`${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${pname(x.id)}  今日 ${fmtD(x.d)}  ${x.w}勝${x.l}敗${AB[x.id]?'  實力 '+AB[x.id].r.toFixed(3):''}\n`});
+  ((dayRows(s)||{st:[]}).st).forEach((x,i)=>{t+=`${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${pname(x.id)}  ${x.b!=null?x.b.toFixed(3)+'→'+x.a.toFixed(3)+'  ':''}今日 ${fmtD(x.d)}  ${x.w}勝${x.l}敗\n`});
   t+='\n【各場比分】\n';gl.forEach(g=>t+=`${g.a.map(pname).join('/')} ${g.sa}-${g.sb} ${g.b.map(pname).join('/')}\n`);
   return t+'\n（只列出已確認的比分）';
 }
@@ -1233,6 +1255,12 @@ document.addEventListener('click',async e=>{
     case 'detF':UI.detMine=v==='mine';break;
     case 'tbMode':UI.tbMode=v;break;
     case 'tbAll':UI.tbAll=true;break;
+    case 'dayImg':{const x=sessById(id);if(!x)return;t.disabled=true;t.textContent='產生中…';let c;try{c=await dayImage(x)}finally{t.disabled=false;t.textContent='📸 產生戰報圖片'}if(!c)return;
+      const url=c.toDataURL('image/png');UI.dayBlob=await new Promise(r=>c.toBlob(r,'image/png'));UI.dayName=`PickleScore_${D(x.started_at).replace(/[^0-9]/g,'')}.png`;
+      modal(`<h3>今日戰報</h3><img src="${url}" alt="今日戰力榜圖片" style="width:100%;border-radius:12px;display:block"><p class="mute" style="font-size:13px">手機可以長按圖片存到相簿。</p>
+        <div class="row2"><button class="btn line" data-act="dayShare">分享</button><button class="btn" data-act="daySave">下載圖片</button></div><button class="btn wide ghost" data-act="close" style="margin-top:8px">關閉</button>`);return}
+    case 'dayShare':{const f=new File([UI.dayBlob],UI.dayName,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'今日戰力榜'})}catch(e){}}else{toast('這台裝置不支援直接分享，請用「下載圖片」或長按圖片')}return}
+    case 'daySave':{const a=document.createElement('a');a.href=URL.createObjectURL(UI.dayBlob);a.download=UI.dayName;document.body.appendChild(a);a.click();a.remove();return}
     case 'meSp':UI.meSport=v;break;
     case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
     case 'avEditOff':UI.avEdit=false;break;
