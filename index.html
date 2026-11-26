@@ -993,6 +993,13 @@ function venueBoard(vid,sp){const G=GROWS[sp];if(!G)return null;const R=gAB(sp)|
   if(bb){let w=1;while(w<26){const p=weekBoss(vid,sp,st-w*WK);if(!p||p.uid!==bb.uid)break;w++}boss={uid:bb.uid,sum:bb.sum,weeks:w}}
   const win=venueWindow(vid,sp,now-D30,now+1),live=win.filter(x=>x.n>=VMIN).sort((a,b)=>b.sum-a.sum),pend=win.filter(x=>x.n<VMIN).sort((a,b)=>b.n-a.n);
   return {ranked,live,pend,games,boss,next:st+WK}}
+const IC={
+  court:'<path d="M3 5h18v14H3zM12 5v14M8 5v14m8-14v14M3 12h5m8 0h5"/>',chev:'<path d="m9 5 7 7-7 7"/>',back:'<path d="m15 5-7 7 7 7"/>',
+  flag:'<path d="M5 21V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/>',pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0zM12 10h.01"/>',crown:'<path d="M3 7l4.5 3L12 4l4.5 6L21 7l-2 11H5zM5 21h14"/>'};
+const ic=(k,n=16)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const vnSpec=v=>`${esc(v.city)}・${v.indoor?'室內':'室外'}${v.courts?` ${v.courts} 面`:''}`;
+const vnMedia=(v,label=true)=>`<div class="vn-media"><div class="vn-fallback">${ic('court',64)}</div>${v.art?`<img class="vn-photo" src="${esc(v.art)}" alt="${esc(v.name)} 插畫" loading="lazy" decoding="async" onerror="this.remove()">`:''}${label?`<span class="vn-media-label">${ic('pin',13)}${vnSpec(v)}</span>`:''}</div>`;
+const vnHead=u=>`<img class="vn-avatar" src="${avRec(avOf(u).av).head}" alt="" loading="lazy">`;
 function vnChallenge(B){const top=B.live[0];if(!top)return '';const bs=B.boss,nm2=u=>u===user.id?'你':uName(u);
   if(!bs)return `${nm2(top.uid)} 目前 ${fmtD(top.sum)}，週一結算就會成為館主`;
   if(top.uid===bs.uid){const sec=B.live[1];return `館主 ${nm2(bs.uid)} 目前 ${fmtD(top.sum)}${sec?`，領先第二名 ${(top.sum-sec.sum).toFixed(3)}`:''}，週一可望衛冕`}
