@@ -196,7 +196,7 @@ body.nonav nav{display:none}
 .mr-dl{font:700 13px/18px Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:3px 7px;border-radius:8px;background:rgba(8,15,28,.35);color:#F8FAFC}.mr-dl.up{color:#A1E8C6}.mr-dl.down{color:#FFB5AE}
 .ring{position:relative;display:inline-grid;place-items:center;flex:none;margin-left:10px}.ring svg{position:absolute;inset:0}.ring b{position:relative;font:800 10px/1 Inter,system-ui,sans-serif;color:#F8FAFC}
 .relc{display:block;font-size:11px;color:#B7CBE0;font-weight:600;margin-top:2px}
-.item[data-act]{cursor:pointer}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
+.item[data-act]{cursor:pointer}.tb .rk{font-size:15px}.tb .tb-top .rk{font-size:22px}.tb .tb-top b{font-size:16px}.tb .item .mr-dl{flex:none}.tr{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}.tr-p{display:flex;flex-direction:column;align-items:center;line-height:1.2}.tr-p small{font-size:12px;color:var(--mute);font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.board .tr{margin-top:4px}.btn.line{background:#06C755;border-color:#06C755;color:#fff;font-weight:800}.inv-wait{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px}.inv-wait small{flex-basis:100%}.inv-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 4px 4px 6px;border-radius:999px;border:1px dashed rgba(253,224,71,.6);font-size:14px}.inv-chip .hd{width:24px;height:24px}.inv-chip button{width:26px;height:26px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:var(--ink);font-size:16px;cursor:pointer}
 .inv-pop{text-align:center}.inv-ic{font-size:44px;line-height:1;animation:invb 1s ease-in-out infinite alternate}.inv-pop h3{margin:8px 0 6px;font-size:22px}.inv-room{margin:0 0 14px}.inv-room b{font-size:18px;color:var(--y)}@keyframes invb{to{transform:translateY(-6px) rotate(8deg)}}
 .addrow .addck{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none}.addrow.on .addck{background:var(--y);border-color:var(--y);box-shadow:inset 0 0 0 4px var(--c2)}.addrow.on{background:rgba(253,224,71,.08)}.vn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vn-card{display:flex;flex-direction:column;text-align:left;padding:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(160deg,var(--c1),var(--c2));color:var(--ink);cursor:pointer;font:inherit}
 .vn-art{height:92px;background:center/cover no-repeat}.vn-art.big{height:150px;border-radius:18px}.vn-art.ph{display:grid;place-items:center;background:radial-gradient(120% 120% at 20% 0%,hsl(var(--h) 55% 45%),hsl(calc(var(--h) + 40) 50% 22%))}.vn-art.ph span{font-size:44px;font-weight:900;color:rgba(255,255,255,.85);text-shadow:0 3px 0 rgba(0,0,0,.25)}.vn-art.big.ph span{font-size:72px}
@@ -726,6 +726,7 @@ function vPlay(s){
   ${pendingCard()}
   ${!on.length&&!q.length&&done.length?`<div class="card hl" style="text-align:center"><h3 style="margin:0 0 4px">🎉 今天排的 ${done.length} 場都打完了</h3>
     ${host?`<p class="mute" style="margin:0 0 12px">要收工就結束活動；還想打，就再加一輪。</p><div class="row2"><button class="btn pri" data-act="endAsk">結束今天的活動</button><button class="btn" data-act="addRound">再加一輪</button></div>`:'<p class="mute" style="margin:0">等房主結束今天的活動。</p>'}</div>`:''}
+  ${todayBoard(s)}
   <h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
   ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
     <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
@@ -789,6 +790,17 @@ function statsOf(gl){
   return Object.values(ps).filter(x=>P(x.id)).sort((x,y)=>(y.w/y.g-x.w/x.g)||(y.w-x.w)||((y.pf-y.pa)-(x.pf-x.pa)));
 }
 const meRow=id=>{const m=myP();return m&&m.id===id?'me':''};
+/* ---------- 今日排行：只看這次活動（勝場／今日進步） ---------- */
+function todayBoard(s,open){const gl=gamesOf(s.id).filter(g=>g.status==='confirmed');if(!gl.length)return '';
+  const st=statsOf(gl).map(x=>{let d=0;gl.forEach(g=>{const sn=SN[g.id];if(sn&&sn[x.id])d+=sn[x.id].a-sn[x.id].b});return Object.assign(x,{d})});
+  const mode=UI.tbMode||'win',mid=(myP()||{}).id;
+  st.sort(mode==='up'?(x,y)=>(y.d-x.d)||(y.w-x.w):(x,y)=>(y.w-x.w)||(x.l-y.l)||((y.pf-y.pa)-(x.pf-x.pa))||(y.d-x.d));
+  const md=['🥇','🥈','🥉'],live=s.status!=='done',n=open||UI.tbAll?st.length:Math.min(st.length,5);
+  return `<div class="mr-head"><h2>${live?'今日排行（即時）':'今日排行'}</h2><span class="mute">${gl.length} 場</span></div>
+  ${seg(mode,'tbMode',[['win','勝場'],['up','今日進步']])}
+  <div class="card tb">${st.slice(0,n).map((x,i)=>`<div class="item ${x.id===mid?'me':''} ${i<3?'tb-top':''}"><span class="rk">${i<3?md[i]:String(i+1).padStart(2,'0')}</span>${headImg(x.id)}<div class="grow"><b>${nm(x.id)}${x.id===mid?'（我）':''}</b><small>${x.w} 勝 ${x.l} 敗・淨${x.pf-x.pa>=0?'+':''}${x.pf-x.pa} 分</small></div><span class="mr-dl ${x.d>=0.0005?'up':x.d<=-0.0005?'down':''}">${fmtD(x.d)}</span></div>`).join('')}
+  ${st.length>n?`<button class="btn wide ghost" data-act="tbAll" style="margin-top:8px">看全部 ${st.length} 人</button>`:''}</div>
+  <p class="mute" style="font-size:12px;margin-top:6px">${mode==='up'?'今日進步＝今天每場實力分數加減的總和（贏強隊加比較多）。':'依勝場排，同勝場比敗場少、再比淨勝分。'}右邊是今天的分數加減。</p>`}
 
 /* ---------- 天梯排行・全部球團（跨球團，用帳號 id 計算，同樣套用 DUPR 新規則） ---------- */
 const GL={};   // sport → {at, list, err}
@@ -890,16 +902,16 @@ function vDetail(s){
   return `<button class="btn sm ghost" data-act="back">‹ 所有紀錄</button>
   <h1 style="margin-top:10px">${esc(roomName(s))}</h1><p class="sub">${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}・${modeTxt(s)}・${ruleTxt(s)}${s.place?'・'+esc(s.place):''}</p>
   ${myN?`<div class="mr-sum"><span>我打了 <strong>${myC}</strong> 場</span><span class="mr-tot"><span class="w">${myW} 勝</span><span class="l">${myC-myW} 敗</span></span>${myN>myC?`<small class="mute" style="flex-basis:100%">另有 ${myN-myC} 場待確認</small>`:''}</div>`:`<p class="mute" style="margin:6px 0 0">這次你沒有上場。</p>`}
+  ${todayBoard(s,true)}
   <div class="mr-head"><h2>比賽紀錄</h2><span class="mute">${UI.detMine&&myN?`其中 ${myN} 場有我`:`共 ${gl.length} 場`}</span></div>
   ${myN?seg(UI.detMine?'mine':'all','detF',[['all','全部場次'],['mine','只看我打的']]):''}
   <div class="mr-list">${shown.length?shown.slice().reverse().map(g=>mrRow(g,s,mid)).join(''):'<p class="empty">沒有比分</p>'}</div>
-  ${st.length?`<h2>這次的表現</h2><div class="card"><table><thead><tr><th>球友</th><th class="num">勝-負</th><th class="num">分差</th><th class="num">實力</th></tr></thead><tbody>${st.map(x=>`<tr class="${meRow(x.id)}"><td>${nm(x.id)}${x.id===mid?'（我）':''}</td><td class="num">${x.w}-${x.l}</td><td class="num">${x.pf-x.pa>0?'+':''}${x.pf-x.pa}</td><td class="num">${AB[x.id]?AB[x.id].r.toFixed(3):'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
   <div class="stack">${cf.length?`<button class="btn wide" data-act="copy" data-id="${s.id}">複製戰績（貼到 LINE）</button>`:''}${isAdmin()?`<button class="btn warn wide" data-act="delAsk" data-id="${s.id}">刪除這次活動</button>`:''}</div>`;
 }
 function report(s){
   const gl=gamesOf(s.id).filter(g=>g.status==='confirmed'),st=statsOf(gl),AB=ability(s.sport,s.id);
-  let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【今天出賽】（依實力分數）\n`;
-  st.slice().sort((x,y)=>((AB[y.id]||{}).r||0)-((AB[x.id]||{}).r||0)).forEach(x=>{t+=`${pname(x.id)}  ${AB[x.id]?'實力 '+AB[x.id].r.toFixed(3)+'  ':''}${x.w}勝${x.l}敗\n`});
+  let t=`PickleScore｜${SP[s.sport]} ${D(s.started_at)} ${HM(s.started_at)}${s.ended_at?'–'+HM(s.ended_at):''}${s.place?' @'+s.place:''}\n\n【今日排行】\n`;
+  st.slice().sort((x,y)=>(y.w-x.w)||(x.l-y.l)||((y.pf-y.pa)-(x.pf-x.pa))).forEach((x,i)=>{t+=`${['🥇','🥈','🥉'][i]||(i+1)+'.'} ${pname(x.id)}  ${x.w}勝${x.l}敗  淨${x.pf-x.pa>=0?'+':''}${x.pf-x.pa}${AB[x.id]?'  實力 '+AB[x.id].r.toFixed(3):''}\n`});
   t+='\n【各場比分】\n';gl.forEach(g=>t+=`${g.a.map(pname).join('/')} ${g.sa}-${g.sb} ${g.b.map(pname).join('/')}\n`);
   return t+'\n（只列出已確認的比分）';
 }
@@ -1219,6 +1231,8 @@ document.addEventListener('click',async e=>{
     case 'follow':{t.disabled=true;const {error}=await sb.from('follows').insert({followee:id});if(error&&error.code!=='23505'){toast(errMsg(error));t.disabled=false;return}FOL.add(id);toast('已追蹤，會出現在「好友」排行');break}
     case 'unfollow':{t.disabled=true;const {error}=await sb.from('follows').delete().eq('follower',user.id).eq('followee',id);if(error){toast(errMsg(error));t.disabled=false;return}FOL.delete(id);toast('已取消追蹤');break}
     case 'detF':UI.detMine=v==='mine';break;
+    case 'tbMode':UI.tbMode=v;break;
+    case 'tbAll':UI.tbAll=true;break;
     case 'meSp':UI.meSport=v;break;
     case 'avEditOn':UI.avEdit=true;UI.avd=null;scrollTo(0,0);break;
     case 'avEditOff':UI.avEdit=false;break;
