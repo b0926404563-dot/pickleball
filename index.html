@@ -292,6 +292,26 @@ h1.vn-h1{margin-top:0}
 .vn-sticky{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom));display:grid;gap:3px;background:#102a43;padding:8px 0;z-index:2;border-top:1px solid var(--vn-edge);text-align:center}
 .vn-sticky .vn-button{min-height:48px;font-size:15px}.vn-sticky span{font-size:11px;color:var(--vn-muted)}
 #view :focus-visible{outline:2px solid var(--vn-gold);outline-offset:2px}
+
+/* 遊戲風對戰卡 */
+.vsx{display:grid;grid-template-columns:1fr 44px 1fr;gap:0;align-items:stretch;position:relative}
+.vs-team{display:flex;flex-direction:column;gap:6px;padding:10px 10px 12px;border-radius:14px;min-width:0}
+.vs-team.a{background:linear-gradient(160deg,rgba(127,178,255,.32),rgba(127,178,255,.06));border:1px solid rgba(127,178,255,.55);clip-path:polygon(0 0,100% 0,88% 100%,0 100%);padding-right:18px}
+.vs-team.b{background:linear-gradient(200deg,rgba(255,154,108,.32),rgba(255,154,108,.06));border:1px solid rgba(255,154,108,.55);clip-path:polygon(12% 0,100% 0,100% 100%,0 100%);padding-left:18px;text-align:right}
+.vs-team.mine{box-shadow:0 0 0 2px var(--y) inset}
+.vs-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px}.vs-team.b .vs-head{flex-direction:row-reverse}
+.vs-lab{font-size:13px;font-weight:900;letter-spacing:.06em}.vs-team.a .vs-lab{color:var(--a)}.vs-team.b .vs-lab{color:var(--b)}
+.vs-pow{font-size:20px;font-weight:900;font-variant-numeric:tabular-nums;color:#F8FAFC;line-height:1}.vs-pow small{font-size:10px;font-weight:700;color:var(--mute);margin-right:3px}
+.vs-p{display:flex;align-items:center;gap:8px;min-width:0}.vs-team.b .vs-p{flex-direction:row-reverse}
+.vs-p .hd{width:42px;height:42px;flex:none;border:2px solid rgba(255,255,255,.25)}.vs-team.a .vs-p .hd{border-color:rgba(127,178,255,.8)}.vs-team.b .vs-p .hd{border-color:rgba(255,154,108,.8)}
+.vs-p div{display:flex;flex-direction:column;min-width:0;line-height:1.2}.vs-p b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vs-p small{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;font-weight:700}
+.vs-p.me b{color:var(--y)}
+.vs-mid{display:grid;place-items:center;z-index:1}
+.vs-badge{display:grid;place-items:center;width:52px;height:52px;margin:0 -4px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF6B8,#FDE047 45%,#C9A10C);color:#102A43;font:900 italic 20px Inter,system-ui,sans-serif;box-shadow:0 0 0 3px #102A43,0 6px 18px rgba(253,224,71,.45);transform:rotate(-8deg)}
+.vs-badge em{font-style:normal;font-size:15px;transform:rotate(8deg)}
+.vs-bar{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}.vs-bar .pa{color:var(--a)}.vs-bar .pb{color:var(--b)}
+.vs-bar div{flex:1;height:8px;border-radius:99px;background:rgba(255,154,108,.75);overflow:hidden}.vs-bar i{display:block;height:100%;background:linear-gradient(90deg,#5b9bff,#7FB2FF);border-right:2px solid #102A43}
+.vs-note{grid-column:1/-1;text-align:center;color:var(--mute);font-size:11px;margin-top:2px}
 </style>
 </head>
 <body class="nonav">
@@ -559,9 +579,16 @@ const teamNames=(ids,mid)=>ids.map(id=>`<span class="${id===mid?'mine':''}">${nm
 function pRate(g,id){const sn=g&&SN[g.id];if(g&&g.status==='confirmed'&&sn&&sn[id])return sn[id].b;const s=g&&sessById(g.session_id),sp=(s&&s.sport)||'pickleball',k=sp+games.reduce((n,x)=>n+(x.status==='confirmed'),0)+'|'+((GROWS[sp]||[]).length);if(!PRC[k])PRC[k]=ability(sp);const AB=PRC[k];return AB[id]?AB[id].r:null}
 const PRC={};
 const teamRated=(g,ids,mid)=>`<span class="tr">${ids.map(id=>{const r=pRate(g,id);return `<span class="tr-p"><span class="${id===mid?'mine':''}">${nm(id)}</span><small>${r==null?'未定級':r.toFixed(3)}</small></span>`}).join('')}</span>`;
-function matchRow(g,s,mid,score){
-  return `<div class="match"><div class="t a"><span class="lab">A 隊</span><div class="heads">${g.a.map(id=>headImg(id)).join('')}</div>${teamRated(g,g.a,mid)}</div>
-    <div class="vs">${score||'vs'}</div><div class="t b"><span class="lab">B 隊</span><div class="heads">${g.b.map(id=>headImg(id)).join('')}</div>${teamRated(g,g.b,mid)}</div></div>`}
+// 遊戲風對戰卡：兩隊色塊、隊伍戰力、VS 徽章、預測勝率
+function winProb(rA,rB,s){const d=(rA.reduce((t,r)=>t+(r-3)/RK,0)-rB.reduce((t,r)=>t+(r-3)/RK,0)),p=1/(1+Math.exp(-d)),T=+(s&&s.cfg&&s.cfg.target)||11,w2=!(s&&s.cfg)||s.cfg.win2!==false;
+  const M={};const f=(a,b)=>{if(a>=T&&(!w2||a-b>=2))return 1;if(b>=T&&(!w2||b-a>=2))return 0;if(w2&&a>=T-1&&b>=T-1&&a===b)return p*p/(p*p+(1-p)*(1-p));const k=a+','+b;if(k in M)return M[k];return M[k]=p*f(a+1,b)+(1-p)*f(a,b+1)};
+  try{return f(0,0)}catch(e){return p}}
+function matchRow(g,s,mid,score){const R=ability((s&&s.sport)||'pickleball'),rt=id=>{const v=pRate(g,id);return v==null?null:v},val=id=>{const v=rt(id);return v==null?3:v};
+  const avg=ids=>ids.reduce((t,id)=>t+val(id),0)/ids.length,pa=winProb(g.a.map(val),g.b.map(val),s),A=Math.round(pa*100);
+  const team=(k,ids)=>`<div class="vs-team ${k} ${ids.includes(mid)?'mine':''}"><div class="vs-head"><span class="vs-lab">${k==='a'?'A':'B'} 隊</span><span class="vs-pow"><small>戰力</small>${avg(ids).toFixed(2)}</span></div>
+    ${ids.map(id=>{const r=rt(id);return `<div class="vs-p ${id===mid?'me':''}">${headImg(id)}<div><b>${nm(id)}</b><small>${r==null?'未定級':r.toFixed(3)}</small></div></div>`}).join('')}</div>`;
+  return `<div class="vsx">${team('a',g.a)}<div class="vs-mid"><span class="vs-badge">${score?`<em>${score}</em>`:'VS'}</span></div>${team('b',g.b)}
+    <div class="vs-bar" aria-label="預測勝率 A 隊 ${A}%、B 隊 ${100-A}%"><span class="pa">${A}%</span><div><i style="width:${A}%"></i></div><span class="pb">${100-A}%</span></div><small class="vs-note">預測勝率（依雙方實力分數）</small></div>`}
 function pendingCard(){
   const list=toConfirm();if(!list.length)return '';
   return `<div class="card hl"><h3>等你確認比分（${list.length}）</h3>${list.map(g=>{const s=sessById(g.session_id);return `<div class="item"><div class="grow"><b>${teamNames(g.a)} vs ${teamNames(g.b)}</b><small>${s?modeTxt(s):''}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span><button class="btn sm pri" data-act="openGame" data-id="${g.id}">查看</button></div>`}).join('')}</div>`}
