@@ -828,7 +828,7 @@ function vWait(s){
   ${host?`<label class="lb" for="rGamesSel">今天打幾場</label>${gamesSelect('rGamesSel',s.cfg&&s.cfg.games,estRounds(Object.assign({sport:s.sport},s.cfg))*Math.max(1,courtsUsed(s)))}
   <details class="more"><summary>房主設定</summary><label class="lb">場地數</label>${seg((s.cfg&&s.cfg.courts)||1,'rCourts',[[1,'1 面'],[2,'2 面'],[3,'3 面'],[4,'4 面']])}
     <button class="btn warn wide" data-act="rcloseAsk" style="margin-top:14px">解散房間</button></details>
-  <div class="foot"><button class="btn pri wide" data-act="rstart" ${ids.length<k||nr<k?'disabled':''}>${ids.length<k?`還差 ${k-ids.length} 人`:nr<k?`還要 ${k-nr} 人按準備`:'開始比賽'}<small>${ids.length<k?'人數不夠':nr<k?`至少 ${k} 人準備好才能開始・目前 ${nr} 人`:`${nr} 人準備好了・排 ${planGames(s)} 場`}</small></button></div>`
+  <div class="foot"><button class="btn pri wide" data-act="rstart" ${ids.length<k||nr<k?'disabled':''}>${ids.length<k?`還差 ${k-ids.length} 人`:nr<k?`還要 ${k-nr} 人按準備`:'開始比賽'}<small>${ids.length<k?'人數不夠':nr<k?`至少 ${k} 人準備好才能開始・目前 ${nr} 人`:`${nr} 人準備好了・排 ${planGames(s)} 場${ids.length>nr?`・沒按準備的 ${ids.length-nr} 人先不排`:''}`}</small></button></div>`
   :`<p class="mute" style="text-align:center;margin-top:14px">等待房主 ${esc(hostP?hostP.name:'')} 開始比賽…</p>`}`;
 }
 function vPlay(s){
@@ -1385,8 +1385,8 @@ document.addEventListener('click',async e=>{
     case 'kick':{const r=room();if(!r||!isHost(r))return;
       if(r.status==='lobby')await saveSess(r,{present:r.present.filter(x=>x!==id),ready:(r.ready||[]).filter(x=>x!==id)});
       else{const aw=r.away||[];await saveSess(r,{away:aw.includes(id)?aw.filter(x=>x!==id):[...aw,id]});toast('已更新，按「重排」套用到還沒開打的場次')}return}
-    case 'rstart':{const r=room();if(!r)return;{const k=per(r),nr=(r.present||[]).filter(id=>(r.ready||[]).includes(id)).length;if(nr<k){toast(`至少 ${k} 人準備好才能開始`);return}}t.disabled=true;await saveSess(r,{status:'live',started_at:new Date().toISOString()});
-      {const N=planGames(r),cu=Math.max(1,courtsUsed(r));await genRounds(r,Math.ceil(N/cu),N)}toast('對戰組合排好了，點「開始這場」開打！');return}
+    case 'rstart':{const r=room();if(!r)return;{const k=per(r),nr=(r.present||[]).filter(id=>(r.ready||[]).includes(id)).length;if(nr<k){toast(`至少 ${k} 人準備好才能開始`);return}}t.disabled=true;const unr=(r.present||[]).filter(id=>!(r.ready||[]).includes(id));await saveSess(r,{status:'live',started_at:new Date().toISOString(),away:[...new Set([...(r.away||[]),...unr])]});
+      {const N=planGames(r),cu=Math.max(1,courtsUsed(r));await genRounds(r,Math.ceil(N/cu),N)}toast(unr.length?`對戰排好了・${unr.map(nm).join('、')} 沒按準備，先不排`:'對戰組合排好了，點「開始這場」開打！');return}
     case 'addRound':{const r=room();if(!r)return;t.disabled=true;await genRounds(r,1);toast('已再排一輪');return}
     case 'rcloseAsk':modal(`<h3>解散房間？</h3><p>房間會關閉，房內的人回到對戰大廳。</p><div class="row2"><button class="btn warn" data-act="rclose">解散</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'rclose':{closeModal();const r=room();if(!r)return;await saveSess(r,{status:'done',ended_at:new Date().toISOString()});setRoom(null);go('today');await loadClub();toast('房間已解散');return}
