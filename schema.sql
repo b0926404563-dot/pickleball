@@ -810,3 +810,6 @@ language sql stable security definer set search_path = public as $$
   order by 6
 $$;
 grant execute on function global_ladder(text) to authenticated;
+
+-- V014：華府面數暫不顯示（各來源不一致：場地資料寫 2 面、實景插畫可見 4 面，待確認正式面數）
+update venues set courts = null where id = 'tn-huafu';

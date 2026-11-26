@@ -217,6 +217,72 @@ body.nonav nav{display:none}
 .pf-lv{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(70,103,131,.5)}.pf-lv:last-child{border-bottom:0}
 .pf-lv small{display:block;font-size:11px;color:#B7CBE0}.pf-lv>span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pf-bar{height:8px;border-radius:8px;background:rgba(255,181,174,.35);overflow:hidden}.pf-bar i{display:block;height:100%;background:#6EE7A8;border-radius:8px}
+
+/* ---------- V003 道館（design/v003_venues） ---------- */
+#view{--vn-card:#294D69;--vn-card-dark:#172F46;--vn-edge:#466783;--vn-text:#F8FAFC;--vn-muted:#B7CBE0;--vn-gold:#FDE047}
+.vn-kicker{display:flex;align-items:center;gap:7px;color:var(--vn-gold);font-weight:800;font-size:13px;margin:4px 0 5px}
+h1.vn-h1{margin-top:0}
+.vn-panel,.vn-feature,.vn-tile{background:linear-gradient(135deg,var(--vn-card),var(--vn-card-dark));border:1px solid var(--vn-edge);border-radius:16px}
+.vn-challenges,.vn-board,.vn-city{margin-top:17px}
+.vn-section-head{min-height:30px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.vn-section-head h2{display:flex;align-items:center;gap:5px;margin:0;font-size:21px;font-weight:850}
+.vn-section-head>span{color:var(--vn-muted);font-size:12px;text-align:right}
+.vn-link{min-height:44px;display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:var(--vn-gold);font:inherit;font-weight:750;font-size:13px;cursor:pointer;padding:0}
+.vn-progress{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:6px 0 10px;color:var(--vn-muted);font-size:12px}
+.vn-progress div{display:flex;align-items:center;gap:6px}.vn-progress b{color:var(--vn-gold)}
+.vn-progress progress{grid-column:1/-1;width:100%;height:5px;appearance:none;border:0;border-radius:5px;background:#34546e;overflow:hidden}
+.vn-progress progress::-webkit-progress-bar{background:#34546e}.vn-progress progress::-webkit-progress-value{background:var(--vn-gold)}.vn-progress progress::-moz-progress-bar{background:var(--vn-gold)}
+.vn-track{display:grid;grid-auto-flow:column;grid-auto-columns:min(calc(100% - 25px),333px);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#6b8aa6 transparent;padding:2px 2px 6px;margin:0 -2px}
+.vn-feature{overflow:hidden;scroll-snap-align:start;min-width:0}
+.vn-image-link,.vn-tile{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.vn-tile{background:linear-gradient(135deg,var(--vn-card),var(--vn-card-dark));border:1px solid var(--vn-edge);overflow:hidden}
+.vn-media{position:relative;aspect-ratio:16/9;isolation:isolate;overflow:hidden;background:#1c3e58}
+.vn-photo,.vn-fallback{position:absolute;inset:0;width:100%;height:100%}
+.vn-photo{display:block;object-fit:contain}
+.vn-fallback{display:grid;place-items:center;color:#a9c9dd;background:radial-gradient(ellipse at center,#365e78,#142e47 76%)}
+.vn-media:has(.vn-photo) .vn-fallback{visibility:hidden}
+.vn-media-label{position:absolute;left:9px;bottom:9px;display:flex;align-items:center;gap:3px;border-radius:7px;padding:4px 7px;background:#0c2236;color:#f8fafc;font-size:11px;font-weight:750}
+.vn-feature-body{padding:10px 11px 11px}
+.vn-feature h3,.vn-tile h3{margin:0;font-size:19px;line-height:1.25;font-weight:850;overflow-wrap:anywhere}
+.vn-owner{min-height:48px;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 0}
+.vn-avatar{display:block;width:36px;height:36px;border:1px solid #6687a2;background:#203e56;border-radius:50%;object-fit:contain}
+.vn-avatar--empty{display:grid;place-items:center;color:var(--vn-muted)}
+.vn-owner small,.vn-personal small{display:flex;align-items:center;gap:4px;color:var(--vn-gold);font-size:11px;font-weight:800}
+.vn-owner strong,.vn-ranking strong,.vn-queue strong{display:block;overflow-wrap:anywhere}
+.vn-owner--vacant small{color:var(--vn-muted)}.vn-owner--self small{color:#ffed91}
+.vn-score{font-size:16px;font-weight:850;color:var(--vn-text);font-variant-numeric:tabular-nums}
+.vn-owner .vn-score{color:#ffed91}
+.vn-card-status{margin:0 0 8px;color:var(--vn-text);font-size:12px;font-weight:700}.vn-card-status span{color:var(--vn-muted);font-weight:600}
+.vn-button{min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 8px;border:1px solid #6c89a1;border-radius:10px;background:#203c55;color:var(--vn-text);font:inherit;font-size:13px;font-weight:800;text-align:center;cursor:pointer}
+.vn-button.vn-primary{background:linear-gradient(#ffed91,var(--vn-gold));color:#102A43;border-color:var(--vn-gold)}
+.vn-feature-actions,.vn-citylinks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vn-overview-line{display:flex;justify-content:space-between;gap:8px;margin:9px 0 12px;color:var(--vn-muted);font-size:13px}.vn-overview-line b{color:var(--vn-gold)}
+.vn-city{scroll-margin-top:70px}
+.vn-stack{display:grid;gap:10px;margin-top:8px}
+.vn-tile-body{padding:10px 12px;display:grid;gap:4px}
+.vn-tile-leader,.vn-tile-bottom{display:flex;align-items:center;gap:6px;color:var(--vn-muted);font-size:13px}
+.vn-tile-leader svg{color:var(--vn-gold)}.vn-tile-bottom{justify-content:space-between;color:var(--vn-text);font-weight:700}
+.vn-subhead{display:flex;align-items:center;gap:9px;color:var(--vn-muted);font-weight:700;margin:0 0 10px}
+.vn-icon-back{width:44px}
+.vn-detail-hero{border:1px solid var(--vn-edge);border-radius:16px;overflow:hidden;background:#172f46;margin-bottom:10px}
+.vn-detail-title{padding:12px}.vn-detail-title h1{font-size:26px;margin:0}
+.vn-detail-title p{display:flex;gap:5px;align-items:center;margin:5px 0 0;color:var(--vn-muted);font-size:13px}
+.vn-leader-card,.vn-personal{margin-top:10px;padding:9px 12px}
+.vn-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:7px;border-top:1px solid var(--vn-edge)}
+.vn-stats div{display:flex;align-items:baseline;gap:7px}.vn-stats b,.vn-personal strong{font-size:18px}.vn-stats span,.vn-personal p{color:var(--vn-muted);font-size:12px;margin:0}
+.vn-personal{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--vn-gold)}.vn-personal strong{display:block;color:var(--vn-text)}
+.vn-ranking,.vn-queue{list-style:none;margin:0;padding:4px 9px}
+.vn-rank-row,.vn-queue-row{display:grid;grid-template-columns:22px 36px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 3px;cursor:pointer}
+.vn-queue-row{grid-template-columns:36px minmax(0,1fr) auto}
+.vn-rank-row+.vn-rank-row,.vn-queue-row+.vn-queue-row{border-top:1px solid var(--vn-edge)}
+.vn-rank-row--self{background:#18374f;border-radius:8px}
+.vn-place,.vn-queue-row b{color:#ffed91;font-weight:850}
+.vn-ranking small,.vn-queue small{display:block;color:var(--vn-muted);font-size:12px}
+.vn-note{color:var(--vn-muted);padding:12px;margin:0}
+.vn-rules{margin:10px 0;color:var(--vn-muted);font-size:13px}.vn-rules summary{min-height:44px;display:list-item;align-content:center;cursor:pointer}.vn-rules p{padding:0 0 10px;margin:0;line-height:1.6}
+.vn-sticky{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom));display:grid;gap:3px;background:#102a43;padding:8px 0;z-index:2;border-top:1px solid var(--vn-edge);text-align:center}
+.vn-sticky .vn-button{min-height:48px;font-size:15px}.vn-sticky span{font-size:11px;color:var(--vn-muted)}
+#view :focus-visible{outline:2px solid var(--vn-gold);outline-offset:2px}
 </style>
 </head>
 <body class="nonav">
@@ -534,7 +600,8 @@ function vToday(){
     <div class="stats">${['pickleball','badminton'].map(sp=>`<div class="chip">${sp==='pickleball'?'匹克球':'羽球'}<b>${rt(sp)}</b>${A[sp][mid]?`<small class="relc">可靠度 ${relOf(mid,sp)}%</small>`:''}</div>`).join('')}</div></div>
   ${pendingCard()}
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
-  <div class="row2"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
+  ${vnLobby(f.sport||'pickleball')}
+  <div class="row2" style="margin-top:14px"><button class="btn ${cur?'':'pri'}" data-act="newRoom">建立房間</button><button class="btn" data-act="joinAsk">加入房間</button></div>
   ${rs.length?`<h2>開著的房間</h2>${rs.map(x=>{const n=playing(x).length,mine=inRoom(x,mid);
     return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${amHost(x)&&(x.pending||[]).length?' <span class="pill live">'+(x.pending||[]).length+' 人申請</span>':''}
       <div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
@@ -860,29 +927,66 @@ function venueBoard(vid,sp){const G=GROWS[sp];if(!G)return null;const R=gAB(sp)|
   const all=Object.keys(cnt).map(u=>({uid:u,n:cnt[u],last:last[u],r:R[u]?R[u].r:3}));
   const ranked=all.filter(x=>x.n>=VMIN).sort((a,b)=>b.r-a.r),pend=all.filter(x=>x.n<VMIN).sort((a,b)=>b.n-a.n);
   return {ranked,pend,games,boss:ranked.find(x=>now-x.last<90*864e5)||null}}
-const venArt=(v,cls='')=>v.art?`<div class="vn-art ${cls}" style="background-image:url(${esc(v.art)})"></div>`:`<div class="vn-art ph ${cls}" style="--h:${(avHash(v.id)%360)}"><span>${esc((v.name.match(/[\u4e00-\u9fff]/)||[v.name[0]])[0])}</span></div>`;
+/* ---------- V003 道館版面（GPT 設計稿 design/v003_venues） ---------- */
+const IC={
+  court:'<path d="M3 5h18v14H3zM12 5v14M8 5v14m8-14v14M3 12h5m8 0h5"/>',chev:'<path d="m9 5 7 7-7 7"/>',back:'<path d="m15 5-7 7 7 7"/>',
+  flag:'<path d="M5 21V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/>',pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0zM12 10h.01"/>',crown:'<path d="M3 7l4.5 3L12 4l4.5 6L21 7l-2 11H5zM5 21h14"/>'};
+const ic=(k,n=16)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
+const vnSpec=v=>`${esc(v.city)}・${v.indoor?'室內':'室外'}${v.courts?` ${v.courts} 面`:''}`;
+const vnMedia=(v,label=true)=>`<div class="vn-media"><div class="vn-fallback">${ic('court',64)}</div>${v.art?`<img class="vn-photo" src="${esc(v.art)}" alt="${esc(v.name)} 插畫" loading="lazy" decoding="async" onerror="this.remove()">`:''}${label?`<span class="vn-media-label">${ic('pin',13)}${vnSpec(v)}</span>`:''}</div>`;
+const vnHead=u=>`<img class="vn-avatar" src="${avRec(avOf(u).av).head}" alt="" loading="lazy">`;
+// 我在這館的狀態
+function vnMe(B){const me=user.id,i=B.ranked.findIndex(x=>x.uid===me),p=B.pend.find(x=>x.uid===me);
+  if(B.boss&&B.boss.uid===me)return {k:'boss',t:'你是館主',s:`第 1 名 / ${B.ranked.length} 人`};
+  if(i>=0){const gap=B.boss?B.boss.r-B.ranked[i].r:null;return {k:'rank',t:`第 ${i+1} 名 / ${B.ranked.length} 人`,s:gap!=null&&gap>0?`距館主 ${gap.toFixed(3)} 分`:''}}
+  if(p)return {k:'pend',t:`再打 ${VMIN-p.n} 場就上榜`,s:`在這裡打了 ${p.n} 場`};
+  return {k:'new',t:'還沒來過',s:`在這裡打滿 ${VMIN} 場正式比賽就能上榜`}}
+function vnOwner(B,big){const b=B.boss,self=b&&b.uid===user.id;if(b)needPeople([b.uid]);
+  return b?`<div class="vn-owner ${self?'vn-owner--self':''}">${vnHead(b.uid)}<div><small>${ic('crown',13)}${self?'你是館主':'現任館主'}</small><strong>${uName(b.uid)}</strong></div><span class="vn-score">${b.r.toFixed(3)}</span></div>`
+   :`<div class="vn-owner vn-owner--vacant"><span class="vn-avatar vn-avatar--empty">${ic('crown',big?20:16)}</span><div><small>${ic('crown',13)}館主</small><strong>從缺</strong></div><span></span></div>`}
+const vnBoard=(vid,sp)=>venueBoard(vid,sp)||{ranked:[],pend:[],games:0,boss:null};
+const vnRanked=sp=>VEN.filter(v=>vnBoard(v.id,sp).ranked.some(x=>x.uid===user.id)).length;
+// 對戰大廳：道館挑戰
+function vnLobby(sp){if(!VEN.length||!GROWS[sp])return '';
+  const order={boss:0,rank:1,pend:2,new:3},L=VEN.map(v=>{const B=vnBoard(v.id,sp);return {v,B,m:vnMe(B)}}).sort((x,y)=>order[x.m.k]-order[y.m.k]||(y.B.games-x.B.games)||(x.v.sort-y.v.sort)).slice(0,5);
+  const n=vnRanked(sp),tot=VEN.length;
+  return `<section class="vn-challenges" aria-label="道館挑戰"><div class="vn-section-head"><h2>道館挑戰</h2><button class="vn-link" data-act="venAll">所有道館 ${ic('chev',15)}</button></div>
+  <div class="vn-progress"><div>${ic('flag',15)}征戰進度・${SP[sp]}</div><b>已上榜 ${n} / ${tot} 館</b><progress max="${tot}" value="${n}" aria-label="已上榜 ${n} / ${tot} 館"></progress></div>
+  <div class="vn-track">${L.map(({v,B,m})=>`<article class="vn-feature"><button class="vn-image-link" data-act="venGo" data-id="${v.id}" aria-label="查看 ${esc(v.name)}">${vnMedia(v)}</button>
+    <div class="vn-feature-body"><h3>${esc(v.name)}</h3>${vnOwner(B)}<p class="vn-card-status">${m.k==='boss'?'👑 ':''}${esc(m.t)}${m.s?`<span>・${esc(m.s)}</span>`:''}</p>
+    <div class="vn-feature-actions"><button class="vn-button vn-primary" data-act="venRoom" data-id="${v.id}">在這裡開房</button><button class="vn-button" data-act="venGo" data-id="${v.id}">查看道館</button></div></div></article>`).join('')}</div></section>`}
+// 道館總覽
 function vVenues(sp){if(!VEN.length)return `<div class="card"><p class="empty">還沒有道館。</p></div>`;
-  return [...new Set(VEN.map(v=>v.city))].map(c=>`<h2>${esc(c)}</h2><div class="vn-grid">${VEN.filter(v=>v.city===c).map(v=>{const B=venueBoard(v.id,sp)||{ranked:[],boss:null,games:0};
-    if(B.boss)needPeople([B.boss.uid]);
-    return `<button class="vn-card" data-act="venue" data-id="${v.id}">${venArt(v)}<div class="vn-body"><b>${esc(v.name)}</b><small>${v.indoor?'室內':'室外'}${v.courts?`・${v.courts} 面`:''}</small>
-      <span class="vn-boss">${B.boss?`👑 館主 ${uName(B.boss.uid)}`:'館主從缺'}</span><small>${B.ranked.length} 人上榜・${B.games} 場</small></div></button>`}).join('')}</div>`).join('')}
+  const cities=[...new Set(VEN.map(v=>v.city))],n=vnRanked(sp);
+  return `<div class="vn-overview-line"><span>${cities.length} 座城市・${VEN.length} 座道館</span><b>已上榜 ${n} / ${VEN.length}</b></div>
+  ${cities.length>1?`<div class="vn-citylinks">${cities.map(c=>`<button class="vn-button" data-act="venCity" data-v="${esc(c)}">${esc(c)} ${VEN.filter(v=>v.city===c).length} 座</button>`).join('')}</div>`:''}
+  ${cities.map(c=>{const vs=VEN.filter(v=>v.city===c);return `<section class="vn-city" id="vn-city-${avHash(c)}"><div class="vn-section-head"><h2>${ic('pin',19)} ${esc(c)}</h2><span>${vs.length} 座道館</span></div>
+    <div class="vn-stack">${vs.map(v=>{const B=vnBoard(v.id,sp),m=vnMe(B);if(B.boss)needPeople([B.boss.uid]);
+      return `<button class="vn-tile" data-act="venGo" data-id="${v.id}">${vnMedia(v)}<div class="vn-tile-body"><h3>${esc(v.name)}</h3>
+        <div class="vn-tile-leader">${ic('crown',15)}${B.boss?`館主 ${uName(B.boss.uid)}・${B.boss.r.toFixed(3)}`:'館主從缺'}</div>
+        <div class="vn-tile-bottom"><span>${m.k==='boss'?'👑 你是館主':esc(m.t)}</span>${ic('chev',16)}</div></div></button>`}).join('')}</div></section>`}).join('')}`}
+// 道館詳情
 function vVenue(vid){const v=venById(vid);if(!v){UI.venue=null;return vRank()}
-  const sp=UI.rankSport,B=venueBoard(vid,sp)||{ranked:[],pend:[],games:0,boss:null};needPeople([...B.ranked,...B.pend].map(x=>x.uid));
-  const mi=B.ranked.findIndex(x=>x.uid===user.id),mp=B.pend.find(x=>x.uid===user.id);
-  const row=(x,i)=>`<div class="item ${i===0?'r1':''} ${x.uid===user.id?'me':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="rk">${String(i+1).padStart(2,'0')}</span><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${folStar(x.uid)}${uName(x.uid)}${x.uid===user.id?'（我）':''}${B.boss&&B.boss.uid===x.uid?' <span class="pill y">👑 館主</span>':''}</b><small>在這裡 ${x.n} 場</small></div><span class="num" style="font-weight:800;font-size:18px">${x.r.toFixed(3)}</span></div>`;
-  return `<button class="btn sm ghost" data-act="venBack">‹ 道館</button>
-  <div class="vn-hero">${venArt(v,'big')}<div class="vn-hinfo"><h1>${esc(v.name)}</h1><p class="sub">${esc(v.city)}${v.address?'・'+esc(v.address):''}<br>${v.indoor?'室內':'室外'}${v.courts?`・${v.courts} 面場地`:''}</p></div></div>
+  const sp=UI.rankSport,B=vnBoard(vid,sp),m=vnMe(B);needPeople([...B.ranked,...B.pend].map(x=>x.uid));
+  const pend=B.pend.slice().sort((a,b)=>b.n-a.n);
+  return `<div class="vn-subhead"><button class="vn-button vn-icon-back" data-act="venBack" aria-label="回到道館總覽">${ic('back',20)}</button>${esc(v.city)}道館</div>
+  <section class="vn-detail-hero">${vnMedia(v)}<div class="vn-detail-title"><h1>${esc(v.name)}</h1><p>${ic('pin',15)}${esc(v.city)}${v.address?'市'+esc(v.address):''}</p></div></section>
   ${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
-  <div class="vn-bosscard">${B.boss?`<img class="hd" src="${avRec(avOf(B.boss.uid).av).head}" alt=""><div class="grow"><small>👑 道館館主</small><b>${uName(B.boss.uid)}</b></div><span class="num" style="font-weight:800;font-size:22px;color:var(--y)">${B.boss.r.toFixed(3)}</span>`:`<div class="grow"><small>👑 道館館主</small><b>從缺</b><small>在這裡打滿 ${VMIN} 場、近 90 天有來打球，分數最高的人就是館主。</small></div>`}</div>
-  <p class="mute" style="margin:10px 0 0">${mi>=0?`你在這個道館排 <b style="color:var(--y)">第 ${mi+1} 名</b> / ${B.ranked.length} 人`:mp?`你在這裡打了 ${mp.n} 場，再打 <b style="color:var(--y)">${VMIN-mp.n} 場</b>就能上榜`:`你還沒在這個道館打過${SP[sp]}，開房時選「${esc(v.name)}」就會算進來。`}</p>
-  <h2>道館排行</h2><div class="card">${B.ranked.length?B.ranked.map(row).join(''):`<p class="empty">還沒有人在這裡打滿 ${VMIN} 場。</p>`}</div>
-  ${B.pend.length?`<h2>還差幾場上榜</h2><div class="card">${B.pend.map(x=>`<div class="item" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><img class="hd" src="${avRec(avOf(x.uid).av).head}" alt="" loading="lazy"><div class="grow"><b>${uName(x.uid)}${x.uid===user.id?'（我）':''}</b><small>在這裡 ${x.n} 場，還差 ${VMIN-x.n} 場</small></div></div>`).join('')}</div>`:''}
-  <p class="mute" style="font-size:13px">排名用的是同一個實力分數（在哪裡打都一起算）；只是限定「在這個道館打滿 ${VMIN} 場正式比賽」的人來排。開房時選了這個道館的比賽才會算進來。</p>`}
+  <section class="vn-panel vn-leader-card">${vnOwner(B,true)}<div class="vn-stats"><div><b>${B.ranked.length}</b><span>上榜人數</span></div><div><b>${B.games}</b><span>正式比賽</span></div></div></section>
+  <section class="vn-panel vn-personal"><div><small>我的狀態</small><strong>${m.k==='boss'?'👑 ':''}${esc(m.t)}</strong>${m.s?`<p>${esc(m.s)}</p>`:''}</div>${ic('flag',26)}</section>
+  <section class="vn-board"><div class="vn-section-head"><h2>道館排行</h2><span>依實力分數排序</span></div>
+    <div class="vn-panel">${B.ranked.length?`<ol class="vn-ranking">${B.ranked.map((x,i)=>{const self=x.uid===user.id,boss=B.boss&&B.boss.uid===x.uid;
+      return `<li class="vn-rank-row ${self?'vn-rank-row--self':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="vn-place">${i+1}</span>${vnHead(x.uid)}<div><strong>${folStar(x.uid)}${uName(x.uid)}</strong><small>${x.n} 場${boss&&self?'・館主・我':boss?'・館主':self?'・我':''}</small></div><span class="vn-score">${x.r.toFixed(3)}</span></li>`}).join('')}</ol>`
+      :`<p class="vn-note">還沒有人在這裡打滿 ${VMIN} 場正式比賽。</p>`}</div></section>
+  <section class="vn-board"><div class="vn-section-head"><h2>還差幾場上榜</h2><span>打滿 ${VMIN} 場</span></div>
+    <div class="vn-panel">${pend.length?`<ul class="vn-queue">${pend.map(x=>`<li class="vn-queue-row" data-act="person" data-id="${x.uid}" role="button" tabindex="0">${vnHead(x.uid)}<div><strong>${uName(x.uid)}${x.uid===user.id?'（我）':''}</strong><small>已打 ${x.n} / ${VMIN} 場</small></div><b>差 ${VMIN-x.n} 場</b></li>`).join('')}</ul>`:'<p class="vn-note">目前沒有待上榜的球友。</p>'}</div></section>
+  <details class="vn-rules"><summary>上榜與館主規則</summary><p>在這個道館打滿 ${VMIN} 場正式比賽就會上榜；上榜者之中，近 90 天有在這裡出賽、實力分數最高的人就是館主。分數是同一個實力分數（在哪裡打都一起算），開房時選了這個道館的比賽才算進這裡。</p></details>
+  <div class="vn-sticky"><button class="vn-button vn-primary" data-act="venRoom" data-id="${v.id}">在這裡開房</button><span>預選：${esc(v.name)}</span></div>`}
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
   const rated=ps.filter(p=>AB[p.id]).sort((x,y)=>AB[y.id].r-AB[x.id].r),un=ps.filter(p=>!AB[p.id]);
   const sc=UI.rankScope||'club',all=sc==='all',fr=sc==='fr';
-  if(sc==='ven')return `<h1>天梯排行</h1><p class="sub">道館・在哪裡打都是同一個分數</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}${vVenues(sp)}`;
+  if(sc==='ven')return `<div class="vn-kicker">${ic('flag',16)}道館總覽</div><h1 class="vn-h1">選你的下一座道館</h1>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}${vVenues(sp)}`;
   if(fr){const n=[...FOL].length;return `<h1>天梯排行</h1><p class="sub">好友・追蹤中 ${n} 人</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
     <h2>好友排名</h2>${globalList(sp,true)}<p class="mute" style="font-size:13px">只列出你追蹤的人和你自己（有${SP[sp]}正式比賽的才會出現）。點名字可以看他的對戰紀錄。</p>`}
   return `<h1>天梯排行</h1><p class="sub">${all?'全部球團':esc(club.name)}・生涯</p>${seg(sc,'rscope',[['club','本球團'],['all','全部球團'],['fr','好友'],['ven','道館']])}${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
@@ -1248,6 +1352,10 @@ document.addEventListener('click',async e=>{
     case 'person':UI.person=id;UI.pMore=false;scrollTo(0,0);break;
     case 'pBack':UI.person=null;break;
     case 'venue':UI.venue=id;scrollTo(0,0);break;
+    case 'venGo':UI.tab='rank';UI.rankScope='ven';UI.venue=id;UI.person=null;UI.rankSport=UI.form.sport||UI.rankSport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
+    case 'venAll':UI.tab='rank';UI.rankScope='ven';UI.venue=null;UI.person=null;UI.rankSport=UI.form.sport||UI.rankSport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
+    case 'venCity':{const el=document.getElementById('vn-city-'+avHash(v));if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
+    case 'venRoom':{const vv=venById(id);if(!vv)return;UI.form.venue=id;if(UI.tab==='rank'&&UI.rankSport)UI.form.sport=UI.rankSport;saveForm();UI.venue=null;go('create');toast('已預選道館：'+vv.name);break}
     case 'venBack':UI.venue=null;break;
     case 'pMore':UI.pMore=true;break;
     case 'follow':{t.disabled=true;const {error}=await sb.from('follows').insert({followee:id});if(error&&error.code!=='23505'){toast(errMsg(error));t.disabled=false;return}FOL.add(id);toast('已追蹤，會出現在「好友」排行');break}
