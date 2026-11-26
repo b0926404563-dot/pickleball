@@ -317,6 +317,8 @@ h1.vn-h1{margin-top:0}
 .vs-bar{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}.vs-bar .pa{color:var(--a)}.vs-bar .pb{color:var(--b)}
 .vs-bar div{flex:1;height:8px;border-radius:99px;background:rgba(255,154,108,.75);overflow:hidden}.vs-bar i{display:block;height:100%;background:linear-gradient(90deg,#5b9bff,#7FB2FF);border-right:2px solid #102A43}
 .vs-note{grid-column:1/-1;text-align:center;color:var(--mute);font-size:11px;margin-top:2px}
+.vn-chal{margin:-2px 0 8px;font-size:12px;font-weight:700;color:#FFED91;line-height:1.4}.vn-chal.big{margin:10px 0 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(253,224,71,.5);background:rgba(253,224,71,.1);font-size:14px}
+.vn-score.up{color:#6EE7A8}.vn-score.down{color:#FFB5AE}.vn-stats b.vn-next{font-size:15px}
 </style>
 </head>
 <body class="nonav">
@@ -969,29 +971,42 @@ function globalList(sp,fr){const G=GL[sp];
 
 /* ---------- 道館：場地排行（跨球團，同一個實力分數） ---------- */
 const VMIN=3,venById=id=>VEN.find(v=>v.id===id);
-function venueBoard(vid,sp){const G=GROWS[sp];if(!G)return null;const R=gAB(sp)||{},now=Date.now(),cnt={},last={};let games=0;
-  G.forEach(g=>{if(g.venue!==vid)return;games++;[...g.a,...g.b].forEach(u=>{cnt[u]=(cnt[u]||0)+1;last[u]=Math.max(last[u]||0,gTime(g))})});
-  const all=Object.keys(cnt).map(u=>({uid:u,n:cnt[u],last:last[u],r:R[u]?R[u].r:3}));
-  const ranked=all.filter(x=>x.n>=VMIN).sort((a,b)=>b.r-a.r),pend=all.filter(x=>x.n<VMIN).sort((a,b)=>b.n-a.n);
-  return {ranked,pend,games,boss:ranked.find(x=>now-x.last<90*864e5)||null}}
-/* ---------- V003 道館版面（GPT 設計稿 design/v003_venues） ---------- */
-const IC={
-  court:'<path d="M3 5h18v14H3zM12 5v14M8 5v14m8-14v14M3 12h5m8 0h5"/>',chev:'<path d="m9 5 7 7-7 7"/>',back:'<path d="m15 5-7 7 7 7"/>',
-  flag:'<path d="M5 21V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/>',pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0zM12 10h.01"/>',crown:'<path d="M3 7l4.5 3L12 4l4.5 6L21 7l-2 11H5zM5 21h14"/>'};
-const ic=(k,n=16)=>`<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]}</svg>`;
-const vnSpec=v=>`${esc(v.city)}・${v.indoor?'室內':'室外'}${v.courts?` ${v.courts} 面`:''}`;
-const vnMedia=(v,label=true)=>`<div class="vn-media"><div class="vn-fallback">${ic('court',64)}</div>${v.art?`<img class="vn-photo" src="${esc(v.art)}" alt="${esc(v.name)} 插畫" loading="lazy" decoding="async" onerror="this.remove()">`:''}${label?`<span class="vn-media-label">${ic('pin',13)}${vnSpec(v)}</span>`:''}</div>`;
-const vnHead=u=>`<img class="vn-avatar" src="${avRec(avOf(u).av).head}" alt="" loading="lazy">`;
-// 我在這館的狀態
-function vnMe(B){const me=user.id,i=B.ranked.findIndex(x=>x.uid===me),p=B.pend.find(x=>x.uid===me);
-  if(B.boss&&B.boss.uid===me)return {k:'boss',t:'你是館主',s:`第 1 名 / ${B.ranked.length} 人`};
-  if(i>=0){const gap=B.boss?B.boss.r-B.ranked[i].r:null;return {k:'rank',t:`第 ${i+1} 名 / ${B.ranked.length} 人`,s:gap!=null&&gap>0?`距館主 ${gap.toFixed(3)} 分`:''}}
-  if(p)return {k:'pend',t:`再打 ${VMIN-p.n} 場就上榜`,s:`在這裡打了 ${p.n} 場`};
-  return {k:'new',t:'還沒來過',s:`在這裡打滿 ${VMIN} 場正式比賽就能上榜`}}
+/* 道館館主：每週一 00:00（台灣時間）結算；看近 30 天在這館的「實力分數加減總和」，至少 3 場 */
+const WK=7*864e5,D30=30*864e5;
+function settleAt(now){const tp=now+8*36e5,d=new Date(tp),dsm=(d.getUTCDay()+6)%7;return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate())-dsm*864e5-8*36e5}
+const GD={};
+function venueDeltas(sp){const G=GROWS[sp];if(!G)return null;const ex=exclSet(sp),k=EXC[sp].key;if(GD[sp]&&GD[sp].k===k)return GD[sp].m;
+  const rows=G.slice().sort(gOrder),toR=g=>({a:g.a,b:g.b,sa:g.sa,sb:g.sb,t:gTime(g)}),kept=[],m={};
+  rows.forEach(g=>{if(g.venue){const t=gTime(g),R0=fitRows(kept.map(toR),t),R1=ex.has(g.id)?R0:fitRows([...kept,g].map(toR),t),d={};
+      [...g.a,...g.b].forEach(u=>d[u]=(R1[u]?R1[u].r:3)-(R0[u]?R0[u].r:3));m[g.id]=d}
+    if(!ex.has(g.id))kept.push(g)});
+  GD[sp]={k,m};return m}
+function venueWindow(vid,sp,from,to){const G=GROWS[sp],D=venueDeltas(sp)||{},acc={};
+  (G||[]).forEach(g=>{if(g.venue!==vid)return;const t=gTime(g);if(t<from||t>=to)return;const d=D[g.id]||{};
+    [...g.a,...g.b].forEach(u=>{const x=acc[u]||(acc[u]={uid:u,sum:0,n:0});x.sum+=d[u]||0;x.n++})});
+  return Object.values(acc)}
+function weekBoss(vid,sp,at){const L=venueWindow(vid,sp,at-D30,at).filter(x=>x.n>=VMIN).sort((a,b)=>b.sum-a.sum);return L[0]||null}
+function venueBoard(vid,sp){const G=GROWS[sp];if(!G)return null;const R=gAB(sp)||{},now=Date.now(),cnt={};let games=0;
+  G.forEach(g=>{if(g.venue!==vid)return;games++;[...g.a,...g.b].forEach(u=>{cnt[u]=(cnt[u]||0)+1})});
+  const ranked=Object.keys(cnt).filter(u=>cnt[u]>=VMIN).map(u=>({uid:u,n:cnt[u],r:R[u]?R[u].r:3})).sort((a,b)=>b.r-a.r);
+  const st=settleAt(now),bb=weekBoss(vid,sp,st);let boss=null;
+  if(bb){let w=1;while(w<26){const p=weekBoss(vid,sp,st-w*WK);if(!p||p.uid!==bb.uid)break;w++}boss={uid:bb.uid,sum:bb.sum,weeks:w}}
+  const win=venueWindow(vid,sp,now-D30,now+1),live=win.filter(x=>x.n>=VMIN).sort((a,b)=>b.sum-a.sum),pend=win.filter(x=>x.n<VMIN).sort((a,b)=>b.n-a.n);
+  return {ranked,live,pend,games,boss,next:st+WK}}
+function vnChallenge(B){const top=B.live[0];if(!top)return '';const bs=B.boss,nm2=u=>u===user.id?'你':uName(u);
+  if(!bs)return `${nm2(top.uid)} 目前 ${fmtD(top.sum)}，週一結算就會成為館主`;
+  if(top.uid===bs.uid){const sec=B.live[1];return `館主 ${nm2(bs.uid)} 目前 ${fmtD(top.sum)}${sec?`，領先第二名 ${(top.sum-sec.sum).toFixed(3)}`:''}，週一可望衛冕`}
+  const bl=(B.live.find(x=>x.uid===bs.uid)||{sum:0}).sum;return `${nm2(top.uid)} 目前 ${fmtD(top.sum)}，領先館主 ${(top.sum-bl).toFixed(3)}，週一結算就會換人`}
+function vnMe(B){const me=user.id,i=B.live.findIndex(x=>x.uid===me),p=B.pend.find(x=>x.uid===me);
+  if(B.boss&&B.boss.uid===me)return {k:'boss',t:'你是本週館主',s:B.boss.weeks>1?`連任 ${B.boss.weeks} 週`:''};
+  if(i>=0){const x=B.live[i];return {k:'rank',t:`挑戰榜第 ${i+1} 名 / ${B.live.length} 人`,s:`近 30 天 ${fmtD(x.sum)}`}}
+  if(p)return {k:'pend',t:`近 30 天再打 ${VMIN-p.n} 場就能挑戰`,s:`近 30 天打了 ${p.n} 場`};
+  if(B.ranked.some(x=>x.uid===me))return {k:'pend',t:'近 30 天沒來打',s:`回來打 ${VMIN} 場就能挑戰館主`};
+  return {k:'new',t:'還沒來過',s:`近 30 天在這裡打滿 ${VMIN} 場就能挑戰館主`}}
 function vnOwner(B,big){const b=B.boss,self=b&&b.uid===user.id;if(b)needPeople([b.uid]);
-  return b?`<div class="vn-owner ${self?'vn-owner--self':''}">${vnHead(b.uid)}<div><small>${ic('crown',13)}${self?'你是館主':'現任館主'}</small><strong>${uName(b.uid)}</strong></div><span class="vn-score">${b.r.toFixed(3)}</span></div>`
-   :`<div class="vn-owner vn-owner--vacant"><span class="vn-avatar vn-avatar--empty">${ic('crown',big?20:16)}</span><div><small>${ic('crown',13)}館主</small><strong>從缺</strong></div><span></span></div>`}
-const vnBoard=(vid,sp)=>venueBoard(vid,sp)||{ranked:[],pend:[],games:0,boss:null};
+  return b?`<div class="vn-owner ${self?'vn-owner--self':''}">${vnHead(b.uid)}<div><small>${ic('crown',13)}${self?'你是本週館主':'本週館主'}${b.weeks>1?`・連任 ${b.weeks} 週`:''}</small><strong>${uName(b.uid)}</strong></div><span class="vn-score">${fmtD(b.sum)}</span></div>`
+   :`<div class="vn-owner vn-owner--vacant"><span class="vn-avatar vn-avatar--empty">${ic('crown',big?20:16)}</span><div><small>${ic('crown',13)}本週館主</small><strong>從缺</strong></div><span></span></div>`}
+const vnBoard=(vid,sp)=>venueBoard(vid,sp)||{ranked:[],live:[],pend:[],games:0,boss:null,next:0};
 const vnRanked=sp=>VEN.filter(v=>vnBoard(v.id,sp).ranked.some(x=>x.uid===user.id)).length;
 // 對戰大廳：道館挑戰
 function vnLobby(sp){if(!VEN.length||!GROWS[sp])return '';
@@ -1000,7 +1015,7 @@ function vnLobby(sp){if(!VEN.length||!GROWS[sp])return '';
   return `<section class="vn-challenges" aria-label="道館挑戰"><div class="vn-section-head"><h2>道館挑戰</h2><button class="vn-link" data-act="venAll">所有道館 ${ic('chev',15)}</button></div>
   <div class="vn-progress"><div>${ic('flag',15)}征戰進度・${SP[sp]}</div><b>已上榜 ${n} / ${tot} 館</b><progress max="${tot}" value="${n}" aria-label="已上榜 ${n} / ${tot} 館"></progress></div>
   <div class="vn-track">${L.map(({v,B,m})=>`<article class="vn-feature"><button class="vn-image-link" data-act="venGo" data-id="${v.id}" aria-label="查看 ${esc(v.name)}">${vnMedia(v)}</button>
-    <div class="vn-feature-body"><h3>${esc(v.name)}</h3>${vnOwner(B)}<p class="vn-card-status">${m.k==='boss'?'👑 ':''}${esc(m.t)}${m.s?`<span>・${esc(m.s)}</span>`:''}</p>
+    <div class="vn-feature-body"><h3>${esc(v.name)}</h3>${vnOwner(B)}<p class="vn-card-status">${m.k==='boss'?'👑 ':''}${esc(m.t)}${m.s?`<span>・${esc(m.s)}</span>`:''}</p>${vnChallenge(B)?`<p class="vn-chal">⚔️ ${vnChallenge(B)}</p>`:''}
     <div class="vn-feature-actions"><button class="vn-button vn-primary" data-act="venRoom" data-id="${v.id}">在這裡開房</button><button class="vn-button" data-act="venGo" data-id="${v.id}">查看道館</button></div></div></article>`).join('')}</div></section>`}
 // 道館總覽
 function vVenues(sp){if(!VEN.length)return `<div class="card"><p class="empty">還沒有道館。</p></div>`;
@@ -1010,24 +1025,28 @@ function vVenues(sp){if(!VEN.length)return `<div class="card"><p class="empty">�
   ${cities.map(c=>{const vs=VEN.filter(v=>v.city===c);return `<section class="vn-city" id="vn-city-${avHash(c)}"><div class="vn-section-head"><h2>${ic('pin',19)} ${esc(c)}</h2><span>${vs.length} 座道館</span></div>
     <div class="vn-stack">${vs.map(v=>{const B=vnBoard(v.id,sp),m=vnMe(B);if(B.boss)needPeople([B.boss.uid]);
       return `<button class="vn-tile" data-act="venGo" data-id="${v.id}">${vnMedia(v)}<div class="vn-tile-body"><h3>${esc(v.name)}</h3>
-        <div class="vn-tile-leader">${ic('crown',15)}${B.boss?`館主 ${uName(B.boss.uid)}・${B.boss.r.toFixed(3)}`:'館主從缺'}</div>
-        <div class="vn-tile-bottom"><span>${m.k==='boss'?'👑 你是館主':esc(m.t)}</span>${ic('chev',16)}</div></div></button>`}).join('')}</div></section>`}).join('')}`}
+        <div class="vn-tile-leader">${ic('crown',15)}${B.boss?`本週館主 ${uName(B.boss.uid)}・${fmtD(B.boss.sum)}${B.boss.weeks>1?`・連任 ${B.boss.weeks} 週`:''}`:'本週館主從缺'}</div>
+        <div class="vn-tile-bottom"><span>${m.k==='boss'?'👑 你是本週館主':esc(m.t)}</span>${ic('chev',16)}</div></div></button>`}).join('')}</div></section>`}).join('')}`}
 // 道館詳情
 function vVenue(vid){const v=venById(vid);if(!v){UI.venue=null;return vRank()}
-  const sp=UI.rankSport,B=vnBoard(vid,sp),m=vnMe(B);needPeople([...B.ranked,...B.pend].map(x=>x.uid));
-  const pend=B.pend.slice().sort((a,b)=>b.n-a.n);
+  const sp=UI.rankSport,B=vnBoard(vid,sp),m=vnMe(B);needPeople([...B.ranked,...B.live,...B.pend].map(x=>x.uid));
+  const ch=vnChallenge(B),nx=new Date(B.next+8*36e5),nxs=`${nx.getUTCMonth()+1}/${nx.getUTCDate()}（一）00:00`;
+  const row=(x,i,val,sub)=>{const self=x.uid===user.id,boss=B.boss&&B.boss.uid===x.uid;
+    return `<li class="vn-rank-row ${self?'vn-rank-row--self':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="vn-place">${i+1}</span>${vnHead(x.uid)}<div><strong>${folStar(x.uid)}${uName(x.uid)}${boss?' 👑':''}</strong><small>${sub}${self?'・我':''}</small></div><span class="vn-score ${val.c||''}">${val.t}</span></li>`};
   return `<div class="vn-subhead"><button class="vn-button vn-icon-back" data-act="venBack" aria-label="回到道館總覽">${ic('back',20)}</button>${esc(v.city)}道館</div>
   <section class="vn-detail-hero">${vnMedia(v)}<div class="vn-detail-title"><h1>${esc(v.name)}</h1><p>${ic('pin',15)}${esc(v.city)}${v.address?'市'+esc(v.address):''}</p></div></section>
   ${seg(sp,'rs',[['pickleball','匹克球'],['badminton','羽球']])}
-  <section class="vn-panel vn-leader-card">${vnOwner(B,true)}<div class="vn-stats"><div><b>${B.ranked.length}</b><span>上榜人數</span></div><div><b>${B.games}</b><span>正式比賽</span></div></div></section>
+  <section class="vn-panel vn-leader-card">${vnOwner(B,true)}<div class="vn-stats"><div><b>${B.live.length}</b><span>挑戰者</span></div><div><b class="vn-next">${nxs}</b><span>下次結算</span></div></div></section>
+  ${ch?`<div class="vn-chal big">⚔️ ${ch}</div>`:''}
   <section class="vn-panel vn-personal"><div><small>我的狀態</small><strong>${m.k==='boss'?'👑 ':''}${esc(m.t)}</strong>${m.s?`<p>${esc(m.s)}</p>`:''}</div>${ic('flag',26)}</section>
-  <section class="vn-board"><div class="vn-section-head"><h2>道館排行</h2><span>依實力分數排序</span></div>
-    <div class="vn-panel">${B.ranked.length?`<ol class="vn-ranking">${B.ranked.map((x,i)=>{const self=x.uid===user.id,boss=B.boss&&B.boss.uid===x.uid;
-      return `<li class="vn-rank-row ${self?'vn-rank-row--self':''}" data-act="person" data-id="${x.uid}" role="button" tabindex="0"><span class="vn-place">${i+1}</span>${vnHead(x.uid)}<div><strong>${folStar(x.uid)}${uName(x.uid)}</strong><small>${x.n} 場${boss&&self?'・館主・我':boss?'・館主':self?'・我':''}</small></div><span class="vn-score">${x.r.toFixed(3)}</span></li>`}).join('')}</ol>`
-      :`<p class="vn-note">還沒有人在這裡打滿 ${VMIN} 場正式比賽。</p>`}</div></section>
-  <section class="vn-board"><div class="vn-section-head"><h2>還差幾場上榜</h2><span>打滿 ${VMIN} 場</span></div>
-    <div class="vn-panel">${pend.length?`<ul class="vn-queue">${pend.map(x=>`<li class="vn-queue-row" data-act="person" data-id="${x.uid}" role="button" tabindex="0">${vnHead(x.uid)}<div><strong>${uName(x.uid)}${x.uid===user.id?'（我）':''}</strong><small>已打 ${x.n} / ${VMIN} 場</small></div><b>差 ${VMIN-x.n} 場</b></li>`).join('')}</ul>`:'<p class="vn-note">目前沒有待上榜的球友。</p>'}</div></section>
-  <details class="vn-rules"><summary>上榜與館主規則</summary><p>在這個道館打滿 ${VMIN} 場正式比賽就會上榜；上榜者之中，近 90 天有在這裡出賽、實力分數最高的人就是館主。分數是同一個實力分數（在哪裡打都一起算），開房時選了這個道館的比賽才算進這裡。</p></details>
+  <section class="vn-board"><div class="vn-section-head"><h2>挑戰者排行</h2><span>近 30 天進步・即時</span></div>
+    <div class="vn-panel">${B.live.length?`<ol class="vn-ranking">${B.live.map((x,i)=>row(x,i,{t:fmtD(x.sum),c:x.sum>=0.0005?'up':x.sum<=-0.0005?'down':''},`近 30 天 ${x.n} 場`)).join('')}</ol>`
+      :`<p class="vn-note">近 30 天還沒有人在這裡打滿 ${VMIN} 場。</p>`}</div></section>
+  <section class="vn-board"><div class="vn-section-head"><h2>還差幾場挑戰</h2><span>近 30 天打滿 ${VMIN} 場</span></div>
+    <div class="vn-panel">${B.pend.length?`<ul class="vn-queue">${B.pend.map(x=>`<li class="vn-queue-row" data-act="person" data-id="${x.uid}" role="button" tabindex="0">${vnHead(x.uid)}<div><strong>${uName(x.uid)}${x.uid===user.id?'（我）':''}</strong><small>近 30 天 ${x.n} / ${VMIN} 場</small></div><b>差 ${VMIN-x.n} 場</b></li>`).join('')}</ul>`:'<p class="vn-note">目前沒有待挑戰的球友。</p>'}</div></section>
+  <section class="vn-board"><div class="vn-section-head"><h2>道館高手榜</h2><span>依實力分數・打滿 ${VMIN} 場</span></div>
+    <div class="vn-panel">${B.ranked.length?`<ol class="vn-ranking">${B.ranked.map((x,i)=>row(x,i,{t:x.r.toFixed(3)},`在這裡 ${x.n} 場`)).join('')}</ol>`:`<p class="vn-note">還沒有人在這裡打滿 ${VMIN} 場正式比賽。</p>`}</div></section>
+  <details class="vn-rules"><summary>館主規則</summary><p>每週一 00:00 結算一次：看「近 30 天在這個道館的比賽」實力分數加減總和，至少打 ${VMIN} 場，總和最高的人就是這一週的館主，到下週一才可能換人。加減分會看隊友和對手強弱，高手贏弱隊幾乎不加分，所以每個人都有機會。挑戰者排行是即時的，看得到誰快要超過館主。道館高手榜則是依實力分數排的參考榜。</p></details>
   <div class="vn-sticky"><button class="vn-button vn-primary" data-act="venRoom" data-id="${v.id}">在這裡開房</button><span>預選：${esc(v.name)}</span></div>`}
 function vRank(){
   const sp=UI.rankSport,AB=ability(sp),me=myP(),ps=players.filter(p=>!p.hidden);
