@@ -1330,6 +1330,8 @@ document.addEventListener('focusout',()=>setTimeout(()=>{const a=document.active
 // 被房主移出：本來在房間裡，同步後名單沒有自己 → 回大廳並提示
 const invPeople=r=>`${(r.present||[]).filter(P).length} 人在房內`;
 const invHeads=r=>{const R=ability(r.sport);return (r.present||[]).filter(P).slice(0,8).map(id=>`<span class="ih">${headImg(id,'s')}<small>${esc(pname(id))}</small><b>${R[id]?R[id].r.toFixed(3):'—'}</b></span>`).join('')};
+const invTail=(iv,cur,me,v)=>`${cur&&cur.id!==iv.id&&inRoom(cur,me.id)?`<p class="mute" style="font-size:13px">接受的話會離開目前的「${esc(roomName(cur))}」。</p>`:''}
+  <div class="row2"><button class="btn pri" data-act="invYes" data-id="${iv.id}">${v?'⚔️ 接受挑戰':'接受'}</button><button class="btn" data-act="invNo" data-id="${iv.id}">${v?'這次不去':'拒絕'}</button></div></div>`;
 function checkInvites(me){
   // 被邀請的人：不管在哪個畫面，立刻跳出邀請
   const iv=sessions.find(x=>x.status!=='done'&&(x.invited||[]).includes(me.id));
@@ -1339,11 +1341,9 @@ function checkInvites(me){
         <div class="inv-vn"><b>${esc(v.name)}</b><small>📍 ${vnSpec(v)}・${SP[iv.sport]}</small></div></div>
       <div class="inv-boss">👑 本週館主：${bs?`<b>${esc(uName(bs.uid))}</b>${bs.weeks>1?`・連任 ${bs.weeks} 週`:''}`:'<b>從缺</b>・等你來搶'}</div>
       <h3>${hp?esc(hp.name):'房主'} 找你來道館對戰！</h3>
-      <p class="inv-room mute"><span id="invCnt">${invPeople(iv)}</span>・已在場上集結</p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>`
+      <p class="inv-room mute"><span id="invCnt">${invPeople(iv)}</span>・已在場上集結</p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>${invTail(iv,cur,me,v)}`
      :`<div class="inv-pop"><div class="inv-ic">🏓</div><h3>${hp?esc(hp.name):'房主'} 邀請你加入</h3>
-      <p class="inv-room"><b>${esc(roomName(iv))}</b><br><span class="mute">${SP[iv.sport]}${iv.place?'・'+esc(iv.place):''}・<span id="invCnt">${invPeople(iv)}</span></span></p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>
-      ${cur&&cur.id!==iv.id&&inRoom(cur,me.id)?`<p class="mute" style="font-size:13px">接受的話會離開目前的「${esc(roomName(cur))}」。</p>`:''}
-      <div class="row2"><button class="btn pri" data-act="invYes" data-id="${iv.id}">${v?'⚔️ 接受挑戰':'接受'}</button><button class="btn" data-act="invNo" data-id="${iv.id}">${v?'這次不去':'拒絕'}</button></div></div>`),30)}
+      <p class="inv-room"><b>${esc(roomName(iv))}</b><br><span class="mute">${SP[iv.sport]}${iv.place?'・'+esc(iv.place):''}・<span id="invCnt">${invPeople(iv)}</span></span></p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>${invTail(iv,cur,me,v)}`),30)}
   else if(iv&&UI.invOpen===iv.id){const c=$('#invCnt'),h=$('#invHeads');if(c)c.innerHTML=invPeople(iv);if(h)h.innerHTML=invHeads(iv)}
   else if(!iv&&UI.invOpen){const was=sessById(UI.invOpen);UI.invOpen=null;closeModal();if(was&&was.status!=='done'&&!inRoom(was,me.id))setTimeout(()=>toast('房主取消了邀請'),50)}
   // 房主：對方拒絕 → 提示
