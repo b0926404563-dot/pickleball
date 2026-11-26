@@ -808,15 +808,15 @@ function vPlay(s){
   ${pendingCard()}
   ${!on.length&&!q.length&&done.length?`<div class="card hl" style="text-align:center"><h3 style="margin:0 0 4px">🎉 今天排的 ${done.length} 場都打完了</h3>
     ${host?`<p class="mute" style="margin:0 0 12px">要收工就結束活動；還想打，就再加一輪。</p><div class="row2"><button class="btn pri" data-act="endAsk">結束今天的活動</button><button class="btn" data-act="addRound">再加一輪</button></div>`:'<p class="mute" style="margin:0">等房主結束今天的活動。</p>'}</div>`:''}
-  ${todayBoard(s)}
-  <h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
-  ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
-    <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
-    :`<div class="card"><p class="empty">目前沒有正在進行的比賽${host&&rec?'，從下方挑一組開始':''}。</p></div>`}
   ${rec?`<h2>建議下一場</h2><div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(rec,s)} 場</b>${fc?'<span class="pill y">有空場地</span>':'<span class="pill">等場地空出</span>'}</div>${matchRow(rec,s,mid)}
     ${host?`<button class="btn pri wide" style="margin-top:12px" data-act="gStart" data-id="${rec.id}" ${fc?'':'disabled'}>${fc?'開始這場':'場地都在使用中'}</button>`:''}</div>`:''}
+  ${on.length||!rec?`<h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
+  ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
+    <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
+    :`<div class="card"><p class="empty">目前沒有正在進行的比賽${host&&rec?'，從下方挑一組開始':''}。</p></div>`}`:''}
   <h2>賽程（還有 ${q.length} 場）</h2><div class="card">${q.length?q.map(g=>`<div class="item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div>${g===rec?'<span class="pill y">建議</span>':''}${startBtn(g)}</div>`).join('')
     :`<p class="empty">預排的場次打完了</p>${host?'<button class="btn wide" data-act="addRound">再排一輪</button>':''}`}</div>
+  ${todayBoard(s)}
   <h2>候場</h2><div class="card">${waitIds.length?`<div class="row">${waitIds.map(id=>`<span class="pill">${nm(id)}</span>`).join('')}</div>`:'<p class="empty" style="padding:6px">目前無候場球員</p>'}</div>
   ${done.length?`<h2>已打完（${done.length}）</h2><div class="mr-list">${done.map(g=>mrRow(g,s,mid)).join('')}</div>`:''}
   <div class="row2" style="margin-top:14px">${me?(inR?`<button class="btn ghost" data-act="rleave" data-id="${s.id}">我先離開</button>`:joinBtn(s,mid,' ')):''}<button class="btn line" data-act="lineRoom" data-id="${s.id}">LINE 分享</button></div>
