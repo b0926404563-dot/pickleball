@@ -358,6 +358,13 @@ h1.vn-h1{margin-top:0}
 @keyframes vs-burst{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}75%{opacity:.72}100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
 @keyframes vs-stamp{0%{transform:scale(.9)}45%{transform:scale(1.15)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.vs-celebrating .vs-confetti{visibility:hidden}.vs-celebrating .vs-confetti i,.vs-celebrating .vs-result-emblem{animation:none}}
+.inv-ven{margin:-6px -6px 0}.inv-hero{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1E3A5F,#0F1B2D);border:1.5px solid rgba(253,224,71,.65);box-shadow:0 0 22px rgba(253,224,71,.25)}
+.inv-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.inv-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,15,28,.15) 30%,rgba(8,15,28,.92))}
+.inv-tag{position:absolute;top:10px;left:10px;z-index:1;padding:4px 10px;border-radius:999px;background:#FDE047;color:#102A43;font-weight:900;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.inv-vn{position:absolute;left:12px;right:12px;bottom:10px;z-index:1;text-align:left}.inv-vn b{display:block;font-size:22px;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6)}.inv-vn small{color:#E2EBF6;font-size:13px}
+.inv-boss{margin:10px 0 2px;padding:7px 10px;border-radius:10px;background:rgba(253,224,71,.1);border:1px solid rgba(253,224,71,.35);color:#FFED91;font-size:14px}.inv-boss b{color:#fff}
+.inv-ven h3{font-size:21px;margin:12px 0 4px}
 </style>
 </head>
 <body class="nonav">
@@ -1324,10 +1331,16 @@ function checkInvites(me){
   // 被邀請的人：不管在哪個畫面，立刻跳出邀請
   const iv=sessions.find(x=>x.status!=='done'&&(x.invited||[]).includes(me.id));
   if(iv&&UI.invOpen!==iv.id&&!UI.invSkip){UI.invOpen=iv.id;const hp=players.find(p=>p.user_id===iv.created_by),cur=room(),v=iv.venue_id&&venById(iv.venue_id);
-    setTimeout(()=>modal(`<div class="inv-pop"><div class="inv-ic">🏓</div><h3>${hp?esc(hp.name):'房主'} 邀請你加入</h3>
-      <p class="inv-room"><b>${esc(roomName(iv))}</b><br><span class="mute">${SP[iv.sport]}${v?'・'+esc(v.name):iv.place?'・'+esc(iv.place):''}・<span id="invCnt">${invPeople(iv)}</span></span></p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>
+    const B=v?vnBoard(v.id,iv.sport):null,bs=B&&B.boss;
+    setTimeout(()=>modal(v?`<div class="inv-pop inv-ven"><div class="inv-hero">${v.art?`<img src="${esc(v.art)}" alt="" onerror="this.remove()">`:''}<span class="inv-tag">⚔️ 道館挑戰</span>
+        <div class="inv-vn"><b>${esc(v.name)}</b><small>📍 ${vnSpec(v)}・${SP[iv.sport]}</small></div></div>
+      <div class="inv-boss">👑 本週館主：${bs?`<b>${esc(uName(bs.uid))}</b>${bs.weeks>1?`・連任 ${bs.weeks} 週`:''}`:'<b>從缺</b>・等你來搶'}</div>
+      <h3>${hp?esc(hp.name):'房主'} 找你來道館對戰！</h3>
+      <p class="inv-room mute"><span id="invCnt">${invPeople(iv)}</span>・已在場上集結</p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>`
+     :`<div class="inv-pop"><div class="inv-ic">🏓</div><h3>${hp?esc(hp.name):'房主'} 邀請你加入</h3>
+      <p class="inv-room"><b>${esc(roomName(iv))}</b><br><span class="mute">${SP[iv.sport]}${iv.place?'・'+esc(iv.place):''}・<span id="invCnt">${invPeople(iv)}</span></span></p><div id="invHeads" class="inv-heads">${invHeads(iv)}</div>
       ${cur&&cur.id!==iv.id&&inRoom(cur,me.id)?`<p class="mute" style="font-size:13px">接受的話會離開目前的「${esc(roomName(cur))}」。</p>`:''}
-      <div class="row2"><button class="btn pri" data-act="invYes" data-id="${iv.id}">接受</button><button class="btn" data-act="invNo" data-id="${iv.id}">拒絕</button></div></div>`),30)}
+      <div class="row2"><button class="btn pri" data-act="invYes" data-id="${iv.id}">${v?'⚔️ 接受挑戰':'接受'}</button><button class="btn" data-act="invNo" data-id="${iv.id}">${v?'這次不去':'拒絕'}</button></div></div>`),30)}
   else if(iv&&UI.invOpen===iv.id){const c=$('#invCnt'),h=$('#invHeads');if(c)c.innerHTML=invPeople(iv);if(h)h.innerHTML=invHeads(iv)}
   else if(!iv&&UI.invOpen){const was=sessById(UI.invOpen);UI.invOpen=null;closeModal();if(was&&was.status!=='done'&&!inRoom(was,me.id))setTimeout(()=>toast('房主取消了邀請'),50)}
   // 房主：對方拒絕 → 提示
