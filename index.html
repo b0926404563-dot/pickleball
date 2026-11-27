@@ -373,6 +373,12 @@ h1.vn-h1{margin-top:0}
 .inv-row .hd{width:42px;height:42px;flex:none}.inv-nm{min-width:0;display:flex;flex-direction:column;line-height:1.2}.inv-nm b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inv-nm small{font-size:12px;color:var(--mute)}
 .inv-sc{font-size:19px;font-weight:900;color:var(--y);font-variant-numeric:tabular-nums}.inv-sc small{font-size:12px;color:var(--mute);font-weight:700}
 .inv-x{position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:17px!important;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.q-pct{flex:none;font-size:13px;font-weight:800;margin:0 4px;font-variant-numeric:tabular-nums;color:var(--mute)}.q-pct .pa{color:#A4BFFF}.q-pct .pb{color:#FFAE88}
+.rec-btns{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+.rp-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
+.rp-c{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:inherit;font:inherit;cursor:pointer}
+.rp-c.cur{border-color:var(--y);background:rgba(253,224,71,.08)}.rp-t{flex:1;min-width:0;font-size:15px;font-weight:700}.rp-t i{font-style:normal;color:var(--mute);margin:0 6px;font-weight:400}
+.rp-w{flex:none;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}.rp-w .pa{color:#A4BFFF}.rp-w .pb{color:#FFAE88}.rp-c em{flex:none;font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--y);color:#102A43;font-weight:800}
 </style>
 </head>
 <body class="nonav">
@@ -644,6 +650,14 @@ function pRate(g,id){const sn=g&&SN[g.id];if(g&&g.status==='confirmed'&&sn&&sn[i
 const PRC={};
 const teamRated=(g,ids,mid)=>`<span class="tr">${ids.map(id=>{const r=pRate(g,id);return `<span class="tr-p"><span class="${id===mid?'mine':''}">${nm(id)}</span><small>${r==null?'未定級':r.toFixed(3)}</small></span>`}).join('')}</span>`;
 // 遊戲風對戰卡：兩隊色塊、隊伍戰力、VS 徽章、預測勝率
+const rateNow=(sp,id)=>{const G=gAB(sp)||{},L=ability(sp);return G[id]?G[id].r:L[id]?L[id].r:3};
+const pctOf=(a,b,s)=>Math.round(winProb(a.map(id=>rateNow(s.sport,id)),b.map(id=>rateNow(s.sport,id)),s)*100);
+function comboList(s,g){const pl=playing(s),k=per(s),h=k/2,out=[],seen=new Set();
+  const subs=(arr,n,st=0,cur=[])=>{if(cur.length===n){out.push(cur.slice());return}for(let i=st;i<arr.length;i++){cur.push(arr[i]);subs(arr,n,i+1,cur);cur.pop()}};
+  subs(pl,k);const res=[];out.forEach(q=>{const first=q[0];const rest=q.slice(1);const pick=[];const sub2=(st,cur)=>{if(cur.length===h-1){pick.push(cur.slice());return}for(let i=st;i<rest.length;i++){cur.push(rest[i]);sub2(i+1,cur);cur.pop()}};sub2(0,[]);
+    pick.forEach(pp=>{const a=[first,...pp],b=q.filter(x=>!a.includes(x)),key=[a.slice().sort().join(','),b.slice().sort().join(',')].sort().join('|');if(seen.has(key))return;seen.add(key);res.push({a,b,p:pctOf(a,b,s)})})});
+  const cur=g?[g.a.slice().sort().join(','),g.b.slice().sort().join(',')].sort().join('|'):'';
+  return res.map(x=>Object.assign(x,{cur:[x.a.slice().sort().join(','),x.b.slice().sort().join(',')].sort().join('|')===cur})).sort((x,y)=>Math.abs(x.p-50)-Math.abs(y.p-50))}
 function winProb(rA,rB,s){const d=(rA.reduce((t,r)=>t+(r-3)/RK,0)-rB.reduce((t,r)=>t+(r-3)/RK,0)),p=1/(1+Math.exp(-d)),T=+(s&&s.cfg&&s.cfg.target)||11,w2=!(s&&s.cfg)||s.cfg.win2!==false;
   const M={};const f=(a,b)=>{if(a>=T&&(!w2||a-b>=2))return 1;if(b>=T&&(!w2||b-a>=2))return 0;if(w2&&a>=T-1&&b>=T-1&&a===b)return p*p/(p*p+(1-p)*(1-p));const k=a+','+b;if(k in M)return M[k];return M[k]=p*f(a+1,b)+(1-p)*f(a,b+1)};
   try{return f(0,0)}catch(e){return p}}
@@ -922,6 +936,7 @@ function vPlay(s){
   if(isHost(s))setTimeout(()=>topUp(s,queued(s),onCourt(s)),400);
   const me=myP(),mid=me&&me.id,host=isHost(s),gl=gamesOf(s.id),on=onCourt(s),q=queued(s),rec=nextRec(s),busy=busyIds(s),fc=freeCourts(s),inR=inRoom(s,mid);
   const waitIds=playing(s).filter(id=>!busy.has(id)),done=gl.filter(g=>g.status!=='open').reverse();
+  const fixBtn=g=>host&&!g.started_at?`<button class="btn sm ghost" data-act="repairAsk" data-id="${g.id}" aria-label="重新配對第 ${seqOf(g,s)} 場">🔀</button>`:'';
   const startBtn=g=>host?`<button class="btn sm ${g===rec?'pri':''}" data-act="gStart" data-id="${g.id}" ${!fc||[...g.a,...g.b].some(id=>busy.has(id))?'disabled':''}>開始這場</button>`:'';
   return `<button class="btn sm ghost" data-tab="today">‹ 對戰大廳</button>
   ${roomVenue(s)}<h1 style="margin-top:10px">房間比賽中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
@@ -931,7 +946,7 @@ function vPlay(s){
   ${!on.length&&!q.length&&done.length?`<div class="card hl" style="text-align:center"><h3 style="margin:0 0 4px">🎉 今天排的 ${done.length} 場都打完了</h3>
     ${host?`<p class="mute" style="margin:0 0 12px">要收工就結束活動；還想打，就再加一輪。</p><div class="row2"><button class="btn pri" data-act="endAsk">結束今天的活動</button><button class="btn" data-act="addRound">再加一輪</button></div>`:'<p class="mute" style="margin:0">等房主結束今天的活動。</p>'}</div>`:''}
   ${rec?`<h2>建議下一場</h2><div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(rec,s)} 場</b>${fc?'<span class="pill y">有空場地</span>':'<span class="pill">等場地空出</span>'}</div>${matchRow(rec,s,mid)}
-    ${host?`<button class="btn pri wide" style="margin-top:12px" data-act="gStart" data-id="${rec.id}" ${fc?'':'disabled'}>${fc?'開始這場':'場地都在使用中'}</button>`:''}</div>`:''}
+    ${host?`<div class="rec-btns"><button class="btn pri" data-act="gStart" data-id="${rec.id}" ${fc?'':'disabled'}>${fc?'開始這場':'場地都在使用中'}</button><button class="btn" data-act="repairAsk" data-id="${rec.id}">🔀 重新配對</button></div>`:''}</div>`:''}
   ${on.length||!rec?`<h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
   ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
     <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
@@ -939,7 +954,7 @@ function vPlay(s){
   ${host?(()=>{const pl=playing(s),inQ=new Set(gl.flatMap(g=>[...g.a,...g.b])),nw=pl.filter(id=>!inQ.has(id)),gone=[...new Set(q.flatMap(g=>[...g.a,...g.b]).filter(id=>!pl.includes(id)))];
     if(!q.length||(!nw.length&&!gone.length))return '';
     return `<div class="card rs-warn"><b>👥 人數有變動</b><p>${nw.length?`${nw.map(nm).join('、')} 剛加入，還沒排進賽程`:''}${nw.length&&gone.length?'；':''}${gone.length?`${gone.map(nm).join('、')} 已不在場上，賽程裡還有他`:''}</p><button class="btn pri wide" data-act="reshuffleAsk">重排還沒開打的場次</button></div>`})():''}
-  <h2>賽程（還有 ${q.length} 場）</h2><div class="card">${q.length?q.map(g=>`<div class="item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div>${spOf(g,s)?`<span class="vs-mini">${BOLT} 特殊</span>`:''}${g===rec?'<span class="pill y">建議</span>':''}${startBtn(g)}</div>`).join('')
+  <h2>賽程（還有 ${q.length} 場）</h2><div class="card">${q.length?q.map(g=>`<div class="item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div>${spOf(g,s)?`<span class="vs-mini">${BOLT} 特殊</span>`:''}${(p=>`<span class="q-pct"><b class="pa">${p}%</b>:<b class="pb">${100-p}%</b></span>`)(pctOf(g.a,g.b,s))}${g===rec?'<span class="pill y">建議</span>':''}${fixBtn(g)}${startBtn(g)}</div>`).join('')
     :`<p class="empty">預排的場次打完了</p>${host?'<button class="btn wide" data-act="addRound">再排一輪</button>':''}`}</div>
   ${todayBoard(s)}
   <h2>候場</h2><div class="card">${waitIds.length?`<div class="row">${waitIds.map(id=>`<span class="pill">${nm(id)}</span>`).join('')}</div>`:'<p class="empty" style="padding:6px">目前無候場球員</p>'}</div>
@@ -1488,6 +1503,12 @@ document.addEventListener('click',async e=>{
     case 'rcloseAsk':modal(`<h3>解散房間？</h3><p>房間會關閉，房內的人回到對戰大廳。</p><div class="row2"><button class="btn warn" data-act="rclose">解散</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'rclose':{closeModal();const r=room();if(!r)return;await saveSess(r,{status:'done',ended_at:new Date().toISOString()});setRoom(null);go('today');await loadClub();toast('房間已解散');return}
     case 'upSkip':{clearTimeout(UI.upT);const c=document.querySelector('#mbox .vs-celebrating');if(c)c.classList.remove('vs-celebrating');t.remove();return}
+    case 'repairAsk':{const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id);if(!g||!r)return;UI.rpF=UI.rpF||null;const L=comboList(r,g).slice(0,60);
+      const row=x=>`<button class="rp-c ${x.cur?'cur':''}" data-act="repairDo" data-id="${g.id}" data-v="${x.a.join(',')}|${x.b.join(',')}"><span class="rp-t">${x.a.map(nm).join('・')}<i>vs</i>${x.b.map(nm).join('・')}</span><span class="rp-w"><b class="pa">${x.p}%</b>:<b class="pb">${100-x.p}%</b></span>${x.cur?'<em>目前</em>':''}</button>`;
+      modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 10px">依勝率接近 50:50 排序，點一下就換成這組。</p><div class="rp-list">${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);return}
+    case 'repairDo':{closeModal();const g=games.find(x=>x.id===id);if(!g||g.started_at||g.status!=='open'){toast('這場已經開始，不能換了');return}const [a,b]=(v||'').split('|').map(x=>x.split(','));
+      const row={session_id:g.session_id,club_id:g.club_id,rn:g.rn,court:g.court,a,b};const {error:e1}=await sb.from('games').delete().eq('id',g.id).eq('status','open').is('started_at',null);if(e1){toast(errMsg(e1));return}
+      const {error:e2}=await sb.from('games').insert([row]);if(e2){toast(errMsg(e2));}else toast('已換成新組合');await loadClub();return}
     case 'reshuffleAsk':modal(`<h3>重排還沒開打的場次</h3><p>依照現在房內的球員重新排對戰組合。正在打和已打完的場次不受影響。</p><div class="row2"><button class="btn pri" data-act="reshuffle">重排</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'reshuffle':{closeModal();if(!s)return;const q=queued(s),n=Math.max(1,Math.ceil(q.length/Math.max(1,courtsUsed(s))));
       if(q.length){const {error}=await sb.from('games').delete().in('id',q.map(g=>g.id)).eq('status','open').is('started_at',null);if(error){toast(errMsg(error));return}games=games.filter(g=>!q.includes(g))}
