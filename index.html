@@ -367,6 +367,7 @@ h1.vn-h1{margin-top:0}
 .inv-ven h3{font-size:21px;margin:12px 0 4px}
 .tcard{margin:-4px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(127,166,255,.1);border:1px solid rgba(127,166,255,.4)}.tcard>b{display:block;font-size:17px}.tcard span{display:block;margin-top:3px;font-size:13px;color:var(--mute)}.tcard span b{color:var(--y)}
 .tcard.over{background:rgba(253,224,71,.1);border-color:rgba(253,224,71,.5)}
+.or-ppl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.or-p{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 2px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);max-width:100%}.or-p .hd{width:26px;height:26px}.or-p b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.or-p.me{border-color:var(--y)}.or-p.me b{color:var(--y)}.or-more{align-self:center;font-size:12px;color:var(--mute)}
 </style>
 </head>
 <body class="nonav">
@@ -724,7 +725,7 @@ function vToday(){
   ${cur?`<button class="btn pri wide" data-act="enter" data-id="${cur.id}" style="margin-bottom:10px">回到房間<small>${esc(roomName(cur))}・${cur.status==='live'?'比賽中':'等待中'}</small></button>`:''}
   ${rs.length?`<h2>開著的房間</h2>${rs.map(x=>{const n=playing(x).length,mine=inRoom(x,mid);
     return `<div class="card ${mine?'hl':''}"><div class="split"><div style="min-width:0"><b>${esc(roomName(x))}</b> ${sportPill(x)} ${x.status==='live'?'<span class="pill live">比賽中</span>':'<span class="pill y">等待中</span>'}${amHost(x)&&(x.pending||[]).length?' <span class="pill live">'+(x.pending||[]).length+' 人申請</span>':''}
-      ${(v=>v?`<div class="or-ven">📍 ${esc(v.name)}</div>`:'')(x.venue_id&&venById(x.venue_id))}<div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="heads" style="margin-top:6px">${playing(x).slice(0,8).map(id=>headImg(id)).join('')}</div></div>
+      ${(v=>v?`<div class="or-ven">📍 ${esc(v.name)}</div>`:'')(x.venue_id&&venById(x.venue_id))}<div class="mute" style="font-size:13px">${x.code?'代碼 '+esc(x.code)+'・':''}${n} 人・${modeTxt(x)}・${ruleTxt(x)}</div><div class="or-ppl">${playing(x).slice(0,10).map(id=>`<span class="or-p ${id===mid?'me':''}">${headImg(id)}<b>${nm(id)}</b></span>`).join('')}${playing(x).length>10?`<span class="or-more">+${playing(x).length-10}</span>`:''}</div></div>
       ${mine?`<button class="btn sm pri" data-act="enter" data-id="${x.id}">進入</button>`:(isPend(x,mid)?`<button class="btn sm" data-act="rcancel" data-id="${x.id}">取消申請</button>`:`<button class="btn sm" data-act="rjoin" data-id="${x.id}">${amHost(x)||(x.present||[]).includes(mid)?'加入':'申請加入'}</button>`)}</div>${isPend(x,mid)?`<div class="pendbar">⏳ 已送出申請，等房主同意中…</div>`:''}</div>`}).join('')}`:''}
   ${vnLobby(f.sport||'pickleball')}
   <div class="lobby-alt"><button class="vn-link" data-act="newRoom">＋ 在其他場地開房</button><button class="vn-link" data-act="joinAsk">輸入房間代碼加入</button></div>
