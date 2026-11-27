@@ -379,6 +379,7 @@ h1.vn-h1{margin-top:0}
 .rp-c{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:inherit;font:inherit;cursor:pointer}
 .rp-c.cur{border-color:var(--y);background:rgba(253,224,71,.08)}.rp-t{flex:1;min-width:0;font-size:15px;font-weight:700}.rp-t i{font-style:normal;color:var(--mute);margin:0 6px;font-weight:400}
 .rp-w{flex:none;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums}.rp-w .pa{color:#A4BFFF}.rp-w .pb{color:#FFAE88}.rp-c em{flex:none;font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--y);color:#102A43;font-weight:800}
+.rp-f{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.rp-chip{padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:inherit;font:inherit;font-size:14px;font-weight:700;cursor:pointer}.rp-chip.on{background:var(--y);color:#102A43;border-color:var(--y)}
 </style>
 </head>
 <body class="nonav">
@@ -694,6 +695,11 @@ function checkUpsets(s){if(!s)return;let seen;try{seen=JSON.parse(localStorage.g
   const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   modal(`<div class="vs-scope">${upsetCard(g,s,!rm)}<div class="row2" style="margin-top:10px"><button class="btn" data-act="upSkip">略過動畫</button><button class="btn pri" data-act="close">好耶！</button></div></div>`);
   clearTimeout(UI.upT);UI.upT=setTimeout(()=>{const c=document.querySelector('#mbox .vs-celebrating');if(c)c.classList.remove('vs-celebrating')},2400)}
+function repairModal(id){const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id);if(!g||!r)return;if(UI.rpG!==id){UI.rpG=id;UI.rpF=[]}const F=UI.rpF||[];
+      const L=comboList(r,g).filter(x=>F.every(p=>x.a.includes(p)||x.b.includes(p))).slice(0,60);
+      const chips=`<div class="rp-f">${playing(r).map(pid=>`<button class="rp-chip ${F.includes(pid)?'on':''}" data-act="repairF" data-id="${g.id}" data-v="${pid}">${nm(pid)}</button>`).join('')}</div>`;
+      const row=x=>`<button class="rp-c ${x.cur?'cur':''}" data-act="repairDo" data-id="${g.id}" data-v="${x.a.join(',')}|${x.b.join(',')}"><span class="rp-t">${x.a.map(nm).join('・')}<i>vs</i>${x.b.map(nm).join('・')}</span><span class="rp-w"><b class="pa">${x.p}%</b>:<b class="pb">${100-x.p}%</b></span>${x.cur?'<em>目前</em>':''}</button>`;
+      modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 8px">想讓誰一定上場？先點名字篩選。依勝率接近 50:50 排序，點一下就換成這組。</p>${chips}<div class="rp-list">${L.length?'':'<p class="empty">沒有符合的組合</p>'}${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);}
 function canFix(g){if(!g||g.status!=='confirmed'||!g.ended_at||Date.now()-Date.parse(g.ended_at)>30*60e3)return false;const me=myP(),s=sessById(g.session_id);return !!(me&&sideOf(g,me.id))||!!(s&&s.created_by===user.id)}
 function pendingCard(){
   const list=toConfirm();if(!list.length)return '';
@@ -1503,9 +1509,8 @@ document.addEventListener('click',async e=>{
     case 'rcloseAsk':modal(`<h3>解散房間？</h3><p>房間會關閉，房內的人回到對戰大廳。</p><div class="row2"><button class="btn warn" data-act="rclose">解散</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'rclose':{closeModal();const r=room();if(!r)return;await saveSess(r,{status:'done',ended_at:new Date().toISOString()});setRoom(null);go('today');await loadClub();toast('房間已解散');return}
     case 'upSkip':{clearTimeout(UI.upT);const c=document.querySelector('#mbox .vs-celebrating');if(c)c.classList.remove('vs-celebrating');t.remove();return}
-    case 'repairAsk':{const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id);if(!g||!r)return;UI.rpF=UI.rpF||null;const L=comboList(r,g).slice(0,60);
-      const row=x=>`<button class="rp-c ${x.cur?'cur':''}" data-act="repairDo" data-id="${g.id}" data-v="${x.a.join(',')}|${x.b.join(',')}"><span class="rp-t">${x.a.map(nm).join('・')}<i>vs</i>${x.b.map(nm).join('・')}</span><span class="rp-w"><b class="pa">${x.p}%</b>:<b class="pb">${100-x.p}%</b></span>${x.cur?'<em>目前</em>':''}</button>`;
-      modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 10px">依勝率接近 50:50 排序，點一下就換成這組。</p><div class="rp-list">${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);return}
+    case 'repairF':{const f=UI.rpF||(UI.rpF=[]);const i=f.indexOf(v);i>=0?f.splice(i,1):f.push(v);repairModal(id);return}
+    case 'repairAsk':repairModal(id);return
     case 'repairDo':{closeModal();const g=games.find(x=>x.id===id);if(!g||g.started_at||g.status!=='open'){toast('這場已經開始，不能換了');return}const [a,b]=(v||'').split('|').map(x=>x.split(','));
       const row={session_id:g.session_id,club_id:g.club_id,rn:g.rn,court:g.court,a,b};const {error:e1}=await sb.from('games').delete().eq('id',g.id).eq('status','open').is('started_at',null);if(e1){toast(errMsg(e1));return}
       const {error:e2}=await sb.from('games').insert([row]);if(e2){toast(errMsg(e2));}else toast('已換成新組合');await loadClub();return}
