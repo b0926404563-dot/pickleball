@@ -386,6 +386,10 @@ h1.vn-h1{margin-top:0}
 .ab-tg button.on.a{background:#7FA6FF;color:#0F1B2D;border-color:#7FA6FF}.ab-tg button.on.b{background:#F2A07B;color:#0F1B2D;border-color:#F2A07B}
 .tier{display:inline-block;margin-left:4px;padding:0 5px;border-radius:5px;font-size:11px;font-weight:900;vertical-align:2px;line-height:16px}.tier.tA{background:#7FA6FF;color:#0F1B2D}.tier.tB{background:#F2A07B;color:#0F1B2D}
 .rp-c.nok{opacity:.55}.rp-c em.nok{background:rgba(255,255,255,.2);color:#fff}
+.q-item{flex-wrap:wrap;row-gap:8px}.q-item .grow{flex:1 1 0;min-width:0}.q-item .grow b,.q-item .grow small{white-space:normal;overflow-wrap:anywhere}
+.q-ctl{flex:1 1 100%;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding-left:36px}.q-tags{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}.q-ctl .q-pct{margin:0;font-size:14px}
+@media(min-width:560px){.q-item{flex-wrap:nowrap}.q-ctl{flex:0 0 auto;padding-left:0}.q-tags{flex:0 0 auto}}
+.vs-p small .tier{margin:0 4px 0 0;vertical-align:1px}.vs-team.b .vs-p small .tier{margin:0 0 0 4px;order:1}
 </style>
 </head>
 <body class="nonav">
@@ -660,7 +664,7 @@ const PRC={};
 const teamRated=(g,ids,mid)=>`<span class="tr">${ids.map(id=>{const r=pRate(g,id);return `<span class="tr-p"><span class="${id===mid?'mine':''}">${nm(id)}</span><small>${r==null?'未定級':r.toFixed(3)}</small></span>`}).join('')}</span>`;
 // 遊戲風對戰卡：兩隊色塊、隊伍戰力、VS 徽章、預測勝率
 const TMC={};
-function tierMap(s){const pl=playing(s),t=(s.cfg&&s.cfg.tier)||{},key=s.id+'|'+JSON.stringify(t)+'|'+pl.join(',')+'|'+games.length+'|'+((GROWS[s.sport]||[]).length);
+function tierMap(s){const pl=playing(s),t=(s.cfg&&s.cfg.tier)||{},key=s.id+'|'+JSON.stringify(t)+'|'+pl.join(',')+'|'+games.reduce((n,g)=>n+(g.status==='confirmed'?1:0),0)+'|'+((GROWS[s.sport]||[]).length);
   if(TMC[s.id]&&TMC[s.id].k===key)return TMC[s.id].m;const G=gAB(s.sport)||{},L=ability(s.sport),rt=id=>G[id]?G[id].r:L[id]?L[id].r:3;
   const srt=pl.slice().sort((x,y)=>(rt(y)-rt(x))||String(x).localeCompare(String(y))),m={};srt.forEach((id,i)=>m[id]=t[id]||(i<Math.ceil(srt.length/2)?'A':'B'));
   TMC[s.id]={k:key,m};return m}
@@ -669,7 +673,7 @@ const isAB=s=>!!(s&&s.cfg&&s.cfg.pair==='ab'&&per(s)===4);
 function pairBox(s){const ab=isAB(s);return `<label class="lb">分組方式</label>${seg(ab?'ab':'auto','rPair',[['auto','自動平衡'],['ab','A強 B弱 搭配']])}
   ${ab?`<p class="mute" style="font-size:13px;margin:6px 0 8px">每隊固定 1 個 A＋1 個 B，A 組會輪流跟不同的 B 組搭。點按鈕切換每個人的組別。</p><div class="ab-list">${playing(s).slice().sort((x,y)=>rateNow(s.sport,y)-rateNow(s.sport,x)).map(id=>{const t=tierOf(s,id),G=gAB(s.sport)||{},L=ability(s.sport),r=G[id]?G[id].r.toFixed(3):L[id]?L[id].r.toFixed(3):'未定級';return `<div class="ab-row">${headImg(id)}<div class="ab-nm"><b>${nm(id)}</b><small>${r}</small></div><div class="ab-tg"><button class="${t==='A'?'on a':''}" data-act="rTier" data-id="${id}" data-v="A">A 強</button><button class="${t==='B'?'on b':''}" data-act="rTier" data-id="${id}" data-v="B">B 弱</button></div></div>`}).join('')}</div>
   <p class="mute" style="font-size:12px;margin-top:6px">A ${playing(s).filter(id=>tierOf(s,id)==='A').length} 人・B ${playing(s).filter(id=>tierOf(s,id)!=='A').length} 人${(()=>{const a=playing(s).filter(id=>tierOf(s,id)==='A').length,b=playing(s).length-a;return a<2*Math.max(1,courtsUsed(s))||b<2*Math.max(1,courtsUsed(s))?'・每組至少要 2 人才排得出 A+B 搭配':''})()}</p>`:''}`}
-const RNC={};const rateNow=(sp,id)=>{const k=games.length+'|'+((GROWS[sp]||[]).length)+'|'+(EXC[sp]?EXC[sp].key.length:0);let c=RNC[sp];if(!c||c.k!==k){c=RNC[sp]={k,G:gAB(sp)||{},L:ability(sp)}}return c.G[id]?c.G[id].r:c.L[id]?c.L[id].r:3};
+const RNC={};const rateNow=(sp,id)=>{const k=games.reduce((n,g)=>n+(g.status==='confirmed'?(g.sa||0)*7+(g.sb||0)+1:0),0)+'|'+((GROWS[sp]||[]).length);let c=RNC[sp];if(!c||c.k!==k){c=RNC[sp]={k,G:gAB(sp)||{},L:ability(sp)}}return c.G[id]?c.G[id].r:c.L[id]?c.L[id].r:3};
 const pctOf=(a,b,s)=>Math.round(winProb(a.map(id=>rateNow(s.sport,id)),b.map(id=>rateNow(s.sport,id)),s)*100);
 function comboList(s,g){const pl=playing(s),k=per(s),h=k/2,out=[],seen=new Set();
   const subs=(arr,n,st=0,cur=[])=>{if(cur.length===n){out.push(cur.slice());return}for(let i=st;i<arr.length;i++){cur.push(arr[i]);subs(arr,n,i+1,cur);cur.pop()}};
@@ -696,7 +700,7 @@ function matchRow(g,s,mid,score){const rt=id=>{const v=pRate(g,id);return v==nul
   const ga=avg(g.a),gb=avg(g.b),gap=Math.abs(ga-gb),sp=gap>=GAP,dog=ga<gb?'a':'b',sc=score?String(score).split(/\s*[–-]\s*/).map(Number):null;
   const lead=sp&&sc&&sc.length===2&&(dog==='a'?sc[0]>sc[1]:sc[1]>sc[0]);
   const team=(k,ids)=>`<div class="vs-team ${k} ${ids.includes(mid)?'vs-myteam':''}"><div class="vs-head"><span class="vs-lab">${k==='a'?'A':'B'} 隊</span>${sp&&dog===k?'<span class="vs-chg">挑戰者</span>':''}</div><div class="vs-pow"><small>戰力</small>${avg(ids).toFixed(2)}</div>
-    ${ids.map(id=>{const r=rt(id);return `<div class="vs-p ${id===mid?'me':''}">${headImg(id)}<div><b>${nm(id)}${isAB(s)?`<span class="tier t${tierOf(s,id)}">${tierOf(s,id)}</span>`:''}${id===mid?'<span class="vs-sr">（我）</span>':''}</b><small>${r==null?'未定級':r.toFixed(3)}</small></div></div>`}).join('')}</div>`;
+    ${ids.map(id=>{const r=rt(id);return `<div class="vs-p ${id===mid?'me':''}">${headImg(id)}<div><b>${nm(id)}${id===mid?'<span class="vs-sr">（我）</span>':''}</b><small>${isAB(s)?`<span class="tier t${tierOf(s,id)}">${tierOf(s,id)}</span>`:''}${r==null?'未定級':r.toFixed(3)}</small></div></div>`}).join('')}</div>`;
   return `<div class="vsx ${sp?'vs-sp vs-dog-'+dog:''} ${sc?'vs-live':''}">${sp?`<header class="vs-spb"><span class="vs-spt">${BOLT} 特殊對戰・以下剋上</span><span class="vs-gap">戰力差 ${gap.toFixed(2)}</span><small>${g.status==='confirmed'?(lead?'挑戰成功・這場正常計分':'強隊獲勝・這場不計分'):lead?'挑戰者暫時領先':'挑戰者獲勝才計分，強隊獲勝雙方分數不變'}</small></header>`:''}${team('a',g.a)}<div class="vs-mid">${sc&&sc.length===2?`<span class="vs-badge vs-badge--score" aria-label="比分 A 隊 ${sc[0]} 分，B 隊 ${sc[1]} 分"><span>${sc[0]}</span>–<span>${sc[1]}</span></span>`:'<span class="vs-badge" aria-hidden="true">VS</span>'}</div>${team('b',g.b)}
     <div class="vs-bar" aria-label="預測勝率 A 隊 ${A}%、B 隊 ${100-A}%"><span class="pa">${A}%</span><div><i style="width:${A}%"></i></div><span class="pb">${100-A}%</span></div><small class="vs-note">預測勝率（依雙方實力分數）</small></div>`}
 /* V004 完場結果：以下剋上／如預期 */
@@ -978,7 +982,7 @@ function vPlay(s){
   ${host?(()=>{const pl=playing(s),inQ=new Set(gl.flatMap(g=>[...g.a,...g.b])),nw=pl.filter(id=>!inQ.has(id)),gone=[...new Set(q.flatMap(g=>[...g.a,...g.b]).filter(id=>!pl.includes(id)))];
     if(!q.length||(!nw.length&&!gone.length))return '';
     return `<div class="card rs-warn"><b>👥 人數有變動</b><p>${nw.length?`${nw.map(nm).join('、')} 剛加入，還沒排進賽程`:''}${nw.length&&gone.length?'；':''}${gone.length?`${gone.map(nm).join('、')} 已不在場上，賽程裡還有他`:''}</p><button class="btn pri wide" data-act="reshuffleAsk">重排還沒開打的場次</button></div>`})():''}
-  <div class="split" style="align-items:center"><h2>賽程（還有 ${q.length} 場）</h2>${host&&q.length?'<button class="btn sm" data-act="reshuffleAsk">🎲 全部重骰</button>':''}</div><div class="card">${q.length?q.map(g=>`<div class="item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div>${spOf(g,s)?`<span class="vs-mini">${BOLT} 特殊</span>`:''}${(p=>`<span class="q-pct"><b class="pa">${p}%</b>:<b class="pb">${100-p}%</b></span>`)(pctOf(g.a,g.b,s))}${g===rec?'<span class="pill y">建議</span>':''}${fixBtn(g)}${startBtn(g)}</div>`).join('')
+  <div class="split" style="align-items:center"><h2>賽程（還有 ${q.length} 場）</h2>${host&&q.length?'<button class="btn sm" data-act="reshuffleAsk">🎲 全部重骰</button>':''}</div><div class="card">${q.length?q.map(g=>`<div class="item q-item"><span class="qn">#${seqOf(g,s)}</span><div class="grow"><b>${teamNames(g.a,mid)}</b><small>vs ${teamNames(g.b,mid)}${[...g.a,...g.b].some(id=>busy.has(id))?'・有人在場上':''}</small></div><div class="q-ctl"><span class="q-tags">${(p=>`<span class="q-pct"><b class="pa">${p}%</b>:<b class="pb">${100-p}%</b></span>`)(pctOf(g.a,g.b,s))}${spOf(g,s)?`<span class="vs-mini">${BOLT} 特殊</span>`:''}${g===rec?'<span class="pill y">建議</span>':''}</span>${fixBtn(g)}${startBtn(g)}</div></div>`).join('')
     :`<p class="empty">預排的場次打完了</p>${host?'<button class="btn wide" data-act="addRound">再排一輪</button>':''}`}</div>
   ${todayBoard(s)}
   <h2>候場</h2><div class="card">${waitIds.length?`<div class="row">${waitIds.map(id=>`<span class="pill">${nm(id)}</span>`).join('')}</div>`:'<p class="empty" style="padding:6px">目前無候場球員</p>'}</div>
