@@ -506,7 +506,7 @@ function makeRound(s,gl,rn,R){
   const st={};playing(s).forEach(p=>{let pr=0,sr=0,i=RS.length-1;while(i>=0&&RS[i].has(p)){pr++;i--}if(!pr)while(i>=0&&!RS[i].has(p)){sr++;i--}
     const fi=RS.findIndex(x=>x.has(p)),n=fi<0?0:RS.slice(fi).filter(x=>x.has(p)).length;st[p]={pr,sr:fi<0?2:sr,rate:fi<0?0:n/(RS.length-fi)}});
   const order=shuffle(playing(s)).sort((x,y)=>(st[y].sr-st[x].sr)||(st[x].pr-st[y].pr)||(st[x].rate-st[y].rate));
-  const ab=isAB(s),T=id=>tierOf(s,id);let play=order.slice(0,cu*k);
+  const ab=isAB(s),TM=ab?tierMap(s):{},T=id=>TM[id]||'B';let play=order.slice(0,cu*k);
   if(ab){const need=cu*2,A=order.filter(p=>T(p)==='A'),B=order.filter(p=>T(p)!=='A');if(A.length>=need&&B.length>=need)play=[...A.slice(0,need),...B.slice(0,need)]}
   let best=null,bc=Infinity;
   for(let t=0;t<500;t++){
@@ -659,12 +659,17 @@ function pRate(g,id){const sn=g&&SN[g.id];if(g&&g.status==='confirmed'&&sn&&sn[i
 const PRC={};
 const teamRated=(g,ids,mid)=>`<span class="tr">${ids.map(id=>{const r=pRate(g,id);return `<span class="tr-p"><span class="${id===mid?'mine':''}">${nm(id)}</span><small>${r==null?'未定級':r.toFixed(3)}</small></span>`}).join('')}</span>`;
 // 遊戲風對戰卡：兩隊色塊、隊伍戰力、VS 徽章、預測勝率
-function tierOf(s,id){const t=(s.cfg&&s.cfg.tier)||{};if(t[id])return t[id];const pl=playing(s).slice().sort((x,y)=>(rateNow(s.sport,y)-rateNow(s.sport,x))||String(x).localeCompare(String(y)));const i=pl.indexOf(id);return i>=0&&i<Math.ceil(pl.length/2)?'A':'B'}
+const TMC={};
+function tierMap(s){const pl=playing(s),t=(s.cfg&&s.cfg.tier)||{},key=s.id+'|'+JSON.stringify(t)+'|'+pl.join(',')+'|'+games.length+'|'+((GROWS[s.sport]||[]).length);
+  if(TMC[s.id]&&TMC[s.id].k===key)return TMC[s.id].m;const G=gAB(s.sport)||{},L=ability(s.sport),rt=id=>G[id]?G[id].r:L[id]?L[id].r:3;
+  const srt=pl.slice().sort((x,y)=>(rt(y)-rt(x))||String(x).localeCompare(String(y))),m={};srt.forEach((id,i)=>m[id]=t[id]||(i<Math.ceil(srt.length/2)?'A':'B'));
+  TMC[s.id]={k:key,m};return m}
+const tierOf=(s,id)=>tierMap(s)[id]||((s.cfg&&s.cfg.tier||{})[id])||'B';
 const isAB=s=>!!(s&&s.cfg&&s.cfg.pair==='ab'&&per(s)===4);
 function pairBox(s){const ab=isAB(s);return `<label class="lb">分組方式</label>${seg(ab?'ab':'auto','rPair',[['auto','自動平衡'],['ab','A強 B弱 搭配']])}
-  ${ab?`<p class="mute" style="font-size:13px;margin:6px 0 8px">每隊固定 1 個 A＋1 個 B，A 組會輪流跟不同的 B 組搭。點按鈕切換每個人的組別。</p><div class="ab-list">${playing(s).slice().sort((x,y)=>rateNow(s.sport,y)-rateNow(s.sport,x)).map(id=>{const t=tierOf(s,id),G=gAB(s.sport)||{},r=G[id]?G[id].r.toFixed(3):'未定級';return `<div class="ab-row">${headImg(id)}<div class="ab-nm"><b>${nm(id)}</b><small>${r}</small></div><div class="ab-tg"><button class="${t==='A'?'on a':''}" data-act="rTier" data-id="${id}" data-v="A">A 強</button><button class="${t==='B'?'on b':''}" data-act="rTier" data-id="${id}" data-v="B">B 弱</button></div></div>`}).join('')}</div>
+  ${ab?`<p class="mute" style="font-size:13px;margin:6px 0 8px">每隊固定 1 個 A＋1 個 B，A 組會輪流跟不同的 B 組搭。點按鈕切換每個人的組別。</p><div class="ab-list">${playing(s).slice().sort((x,y)=>rateNow(s.sport,y)-rateNow(s.sport,x)).map(id=>{const t=tierOf(s,id),G=gAB(s.sport)||{},L=ability(s.sport),r=G[id]?G[id].r.toFixed(3):L[id]?L[id].r.toFixed(3):'未定級';return `<div class="ab-row">${headImg(id)}<div class="ab-nm"><b>${nm(id)}</b><small>${r}</small></div><div class="ab-tg"><button class="${t==='A'?'on a':''}" data-act="rTier" data-id="${id}" data-v="A">A 強</button><button class="${t==='B'?'on b':''}" data-act="rTier" data-id="${id}" data-v="B">B 弱</button></div></div>`}).join('')}</div>
   <p class="mute" style="font-size:12px;margin-top:6px">A ${playing(s).filter(id=>tierOf(s,id)==='A').length} 人・B ${playing(s).filter(id=>tierOf(s,id)!=='A').length} 人${(()=>{const a=playing(s).filter(id=>tierOf(s,id)==='A').length,b=playing(s).length-a;return a<2*Math.max(1,courtsUsed(s))||b<2*Math.max(1,courtsUsed(s))?'・每組至少要 2 人才排得出 A+B 搭配':''})()}</p>`:''}`}
-const rateNow=(sp,id)=>{const G=gAB(sp)||{},L=ability(sp);return G[id]?G[id].r:L[id]?L[id].r:3};
+const RNC={};const rateNow=(sp,id)=>{const k=games.length+'|'+((GROWS[sp]||[]).length)+'|'+(EXC[sp]?EXC[sp].key.length:0);let c=RNC[sp];if(!c||c.k!==k){c=RNC[sp]={k,G:gAB(sp)||{},L:ability(sp)}}return c.G[id]?c.G[id].r:c.L[id]?c.L[id].r:3};
 const pctOf=(a,b,s)=>Math.round(winProb(a.map(id=>rateNow(s.sport,id)),b.map(id=>rateNow(s.sport,id)),s)*100);
 function comboList(s,g){const pl=playing(s),k=per(s),h=k/2,out=[],seen=new Set();
   const subs=(arr,n,st=0,cur=[])=>{if(cur.length===n){out.push(cur.slice());return}for(let i=st;i<arr.length;i++){cur.push(arr[i]);subs(arr,n,i+1,cur);cur.pop()}};
