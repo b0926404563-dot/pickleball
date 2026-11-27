@@ -368,11 +368,11 @@ h1.vn-h1{margin-top:0}
 .tcard{margin:-4px 0 14px;padding:10px 12px;border-radius:12px;background:rgba(127,166,255,.1);border:1px solid rgba(127,166,255,.4)}.tcard>b{display:block;font-size:17px}.tcard span{display:block;margin-top:3px;font-size:13px;color:var(--mute)}.tcard span b{color:var(--y)}
 .tcard.over{background:rgba(253,224,71,.1);border-color:rgba(253,224,71,.5)}
 .or-ppl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.or-p{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 2px 2px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);max-width:100%}.or-p .hd{width:26px;height:26px}.or-p b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.or-p.me{border-color:var(--y)}.or-p.me b{color:var(--y)}.or-more{align-self:center;font-size:12px;color:var(--mute)}
-.inv-wait{margin-top:12px;display:flex;flex-direction:column;gap:8px}.inv-wh{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.inv-wh b{font-size:16px}
-.inv-row{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:14px;border:1.5px dashed rgba(253,224,71,.5);background:rgba(253,224,71,.05)}
-.inv-row .hd{width:46px;height:46px;flex:none}.inv-nm{flex:1;min-width:0;display:flex;flex-direction:column}.inv-nm b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inv-nm small{font-size:13px;color:var(--mute)}
-.inv-sc{font-size:22px;font-weight:900;color:var(--y);font-variant-numeric:tabular-nums}.inv-sc small{font-size:13px;color:var(--mute);font-weight:700}
-.inv-x{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;cursor:pointer}
+.inv-wait{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;align-self:stretch;text-align:left}.inv-wh{grid-column:1/-1;display:flex;align-items:baseline;gap:10px}.inv-wh b{font-size:16px;white-space:nowrap}
+.inv-row{position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:10px 34px 10px 8px;border-radius:14px;border:1.5px dashed rgba(253,224,71,.5);background:rgba(253,224,71,.05)}
+.inv-row .hd{width:42px;height:42px;flex:none}.inv-nm{min-width:0;display:flex;flex-direction:column;line-height:1.2}.inv-nm b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.inv-nm small{font-size:12px;color:var(--mute)}
+.inv-sc{font-size:19px;font-weight:900;color:var(--y);font-variant-numeric:tabular-nums}.inv-sc small{font-size:12px;color:var(--mute);font-weight:700}
+.inv-x{position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:17px!important;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 </style>
 </head>
 <body class="nonav">
@@ -884,7 +884,7 @@ function roomVenue(s){const v=s.venue_id&&venById(s.venue_id),hp=players.find(p=
       <span class="rv-body"><span class="rv-t"><small>${ic('flag',13)} 今天的道館</small><b>${esc(v.name)}</b><span class="rv-sub">${bs?`${ic('crown',13)} 館主 ${bs.uid===user.id?'我':uName(bs.uid)}・${bs.r.toFixed(3)}`:`${ic('crown',13)} 館主從缺`}${hn?`<i>・${hn} 開團</i>`:''}</span></span>${ic('chev',20)}</span></button>`}
   return s.place||hn?`<p class="rv-plain">${s.place?'📍 '+esc(s.place):''}${hn?`<small>${s.place?'・':''}${hn} 開團</small>`:''}</p>`:''}
 const invCard=s=>{if(!amHost(s))return '';const iv=(s.invited||[]).filter(P);if(!iv.length)return '';const G=gAB(s.sport)||{},L=ability(s.sport),rt=id=>G[id]?G[id].r:L[id]?L[id].r:null;
-  return `<div class="inv-wait"><div class="inv-wh"><b>已邀請 ${iv.length} 人</b><small class="mute">等對方回覆中…</small></div>${iv.slice().sort((a,b)=>(rt(b)||0)-(rt(a)||0)).map(id=>{const r=rt(id);return `<div class="inv-row">${headImg(id)}<div class="inv-nm"><b>${nm(id)}</b><small>⏳ 等回覆</small></div><span class="inv-sc">${r==null?'<small>未定級</small>':r.toFixed(3)}</span><button class="inv-x" aria-label="取消邀請 ${esc(pname(id))}" data-act="uninvite" data-id="${id}">×</button></div>`}).join('')}</div>`};
+  return `<div class="inv-wait"><div class="inv-wh"><b>已邀請 ${iv.length} 人</b><small class="mute">等對方回覆中…</small></div>${iv.slice().sort((a,b)=>(rt(b)||0)-(rt(a)||0)).map(id=>{const r=rt(id);return `<div class="inv-row">${headImg(id)}<div class="inv-nm"><b>${nm(id)}</b><span class="inv-sc">${r==null?'<small>未定級</small>':r.toFixed(3)}</span><small>⏳ 等回覆</small></div><button class="inv-x" aria-label="取消邀請 ${esc(pname(id))}" data-act="uninvite" data-id="${id}">×</button></div>`}).join('')}</div>`};
 const addBtn=s=>amHost(s)?`${invCard(s)}<button class="btn wide" data-act="addAsk" style="margin-top:10px">＋ 邀請球友進房間</button>`:'';
 async function joinRoom(sid){
   const res=await rpc('room_join',{sid});
