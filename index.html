@@ -674,6 +674,7 @@ function checkUpsets(s){if(!s)return;let seen;try{seen=JSON.parse(localStorage.g
   const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
   modal(`<div class="vs-scope">${upsetCard(g,s,!rm)}<div class="row2" style="margin-top:10px"><button class="btn" data-act="upSkip">略過動畫</button><button class="btn pri" data-act="close">好耶！</button></div></div>`);
   clearTimeout(UI.upT);UI.upT=setTimeout(()=>{const c=document.querySelector('#mbox .vs-celebrating');if(c)c.classList.remove('vs-celebrating')},2400)}
+function canFix(g){if(!g||g.status!=='confirmed'||!g.ended_at||Date.now()-Date.parse(g.ended_at)>30*60e3)return false;const me=myP(),s=sessById(g.session_id);return !!(me&&sideOf(g,me.id))||!!(s&&s.created_by===user.id)}
 function pendingCard(){
   const list=toConfirm();if(!list.length)return '';
   return `<div class="card hl"><h3>等你確認比分（${list.length}）</h3>${list.map(g=>{const s=sessById(g.session_id);return `<div class="item"><div class="grow"><b>${teamNames(g.a)} vs ${teamNames(g.b)}</b><small>${s?modeTxt(s):''}</small></div><span class="num" style="font-weight:800">${g.sa}–${g.sb}</span><button class="btn sm pri" data-act="openGame" data-id="${g.id}">查看</button></div>`}).join('')}</div>`}
@@ -681,7 +682,7 @@ function pendingCard(){
 /* ---------- 登入前 ---------- */
 function vSetup(){return `<div class="card hero2"><h2>還差一步：連上資料庫</h2><p class="mute">請在 index.html 最上面填入 Supabase 的網址和 anon key。</p></div>`}
 function vLogin(){const a=avOf('demo');return `<div class="hero2">${figure({av:'avatar_preset_01',pb:'paddle_01'},'pickleball')}<h1>一起打球，一起記分</h1>
-  <p class="mute">開房、自動排對戰、即時計分、對手確認，<br>匹克球和羽球各有自己的實力分數。</p>
+  <p class="mute">開房、自動排對戰、即時計分、一鍵記比分，<br>匹克球和羽球各有自己的實力分數。</p>
   ${TESTN?`<div class="card" style="text-align:left"><b>測試登入（第 ${TESTN} 號分頁）</b><p class="mute">每個分頁各自登入一個測試帳號，關掉分頁就登出。</p>
   <label class="lb" for="temail">測試帳號</label><input type="text" id="temail" autocapitalize="off" value="test${String(TESTN).padStart(2,'0')}@picklescore.test">
   <label class="lb" for="tpw">密碼</label><input type="password" id="tpw" autocomplete="current-password">
@@ -958,7 +959,7 @@ function vGame(g,s){
       ${cs?`<button class="plus b" data-act="pt" data-id="${g.id}" data-v="b" aria-label="B 隊得 1 分">B +1</button>`:''}</div></div>
     ${cs?`<button class="btn wide" style="margin-top:10px" data-act="ptUndo" data-id="${g.id}" ${x+y?'':'disabled'}>↶ 復原上一分</button>
       <details class="more"><summary>計分選項</summary><div class="row2"><button class="btn" data-act="toManualAsk" data-id="${g.id}">改手動填分</button><button class="btn" data-act="earlyAsk" data-id="${g.id}" ${x!==y?'':'disabled'}>提前結束</button></div></details>
-      <p class="mute" style="text-align:center;margin:14px 0 0">${w?`🏆 ${w==='a'?'A':'B'} 隊拿下這場，送出後由對手確認。`:'符合勝利條件後，即可送交對手確認。'}</p>
+      <p class="mute" style="text-align:center;margin:14px 0 0">${w?`🏆 ${w==='a'?'A':'B'} 隊拿下這場，送出就算數。`:'符合勝利條件後，按送出就記錄比分。'}</p>
       <div class="foot"><button class="btn pri wide" data-act="lvSubmit" data-id="${g.id}" ${w?'':'disabled'}>${w?`送出比分 ${x}:${y}`:'尚未達到勝利條件'}</button></div>`
     :'<p class="mute" style="text-align:center;margin-top:14px">由場上球員、房主或團長／幹部記分。</p>'}`}
   if(g.status==='open'||ed){const pa=UI.fill&&UI.fill.id===g.id?UI.fill:{id:g.id,x:ed&&g.sa!=null?g.sa:'',y:ed&&g.sb!=null?g.sb:''};UI.fill=pa;
@@ -972,13 +973,13 @@ function vGame(g,s){
   const rep=g.reported_side,sideA=rep==='a'?'已送出':g.status==='confirmed'?'已確認':rep==='b'?'待確認':'—',sideB=rep==='b'?'已送出':g.status==='confirmed'?'已確認':rep==='a'?'待確認':'—';
   return head+`${spResult(g,s)?`<div class="vs-scope">${upsetCard(g,s,false)}</div>`:''}<div class="card">${matchRow(g,s,mid,`${g.sa}–${g.sb}`)}<div class="res">${g.sa>g.sb?'A':'B'} 隊獲勝</div></div>
   ${snapCard(g,s,mid)}
-  <h2>${g.status==='pending'?'送出後的對手確認':'已列入正式戰績'}</h2><div class="card">
+  <h2>${g.status==='pending'?'等場上球員確認':'已列入正式戰績'}</h2><div class="card">
     <div class="stline"><span class="bd2 a">A</span><b style="flex:1">A 隊</b><span class="pill ${sideA==='待確認'?'y':'ok'}">${sideA}</span></div>
     <div class="stline"><span class="bd2 b">B</span><b style="flex:1">B 隊</b><span class="pill ${sideB==='待確認'?'y':'ok'}">${sideB}</span></div>
-    <p class="mute" style="margin:8px 0 0">${g.status==='pending'?`${esc(unameByUid(g.reported_by))} 送出，對手確認後列入正式戰績。`:`由 ${esc(unameByUid(g.confirmed_by))} 確認。`}</p></div>
+    <p class="mute" style="margin:8px 0 0">${g.status==='pending'?`${esc(unameByUid(g.reported_by))} 代為送出，場上球員或房主確認後列入正式戰績。`:`由 ${esc(unameByUid(g.confirmed_by))} 記錄。`}</p></div>
   <div class="stack">${g.status==='pending'&&canConfirm(g)&&g.reported_by!==user.id?`<button class="btn pri wide" data-act="confirm" data-id="${g.id}">比分正確，確認</button>`:''}
-    ${g.status==='pending'&&g.reported_by===user.id?'<p class="mute" style="text-align:center">已送出，等待對手確認。</p>':''}
-    ${g.status==='pending'||isAdmin()?`<button class="btn wide ghost" data-act="edit" data-id="${g.id}">比分不對，修改</button>`:''}</div>`;
+    ${g.status==='pending'&&g.reported_by===user.id?'<p class="mute" style="text-align:center">已送出，等場上球員或房主確認。</p>':''}
+    ${g.status==='pending'||isAdmin()||canFix(g)?`<button class="btn wide ghost" data-act="edit" data-id="${g.id}">比分不對，修改${g.status==='confirmed'&&!isAdmin()?`<small>打完 30 分鐘內可改</small>`:''}</button>`:''}</div>`;
 }
 
 /* ---------- 07 排名 ---------- */
@@ -1498,12 +1499,12 @@ document.addEventListener('click',async e=>{
     case 'ptUndo':t.disabled=true;await rpc('score_undo',{gid:id});await loadEvents();break;
     case 'toManualAsk':modal(`<h3>改用手動填分？</h3><p>會改成直接輸入最後比分，目前的即時比分會帶入。</p><div class="row2"><button class="btn pri" data-act="toManual" data-id="${id}">改手動填分</button><button class="btn" data-act="close">取消</button></div>`);return;
     case 'toManual':{closeModal();const [x,y]=scoreOf({id});UI.edit=id;UI.fill={id,x,y};break}
-    case 'earlyAsk':{const [x,y]=scoreOf({id});modal(`<h3>提前結束這場？</h3><p>以目前比分 ${x}:${y} 送交對手確認。</p><div class="row2"><button class="btn pri" data-act="lvSubmit" data-id="${id}">提前結束並送出</button><button class="btn" data-act="close">取消</button></div>`);return}
+    case 'earlyAsk':{const [x,y]=scoreOf({id});modal(`<h3>提前結束這場？</h3><p>以目前比分 ${x}:${y} 記錄這場。</p><div class="row2"><button class="btn pri" data-act="lvSubmit" data-id="${id}">提前結束並送出</button><button class="btn" data-act="close">取消</button></div>`);return}
     case 'lvSubmit':{closeModal();const [x,y]=scoreOf({id});if(x===y){toast('比分不能平手');return}t.disabled=true;
-      await rpc('report_score',{gid:id,x,y});toast(isAdmin()?'已送出':'已送出，等對手確認');await loadClub();await ensureRounds();return}
+      await rpc('report_score',{gid:id,x,y});await loadClub();{const g=games.find(z=>z.id===id);if(g&&g.status==='confirmed'){await saveSnap(id);toast('比分已記錄 ✓')}else toast('已送出，等場上球員確認')}await ensureRounds();return}
     case 'report':{const x=parseInt($('#xa').value),y=parseInt($('#xb').value);
       if(isNaN(x)||isNaN(y)){toast('請填兩隊的分數');return}if(x===y){toast('比分不能平手');return}
-      t.disabled=true;await rpc('report_score',{gid:id,x,y});UI.edit=null;UI.fill=null;toast(isAdmin()?'已送出':'已送出，等對手確認');await loadClub();await ensureRounds();return}
+      t.disabled=true;await rpc('report_score',{gid:id,x,y});UI.edit=null;UI.fill=null;await loadClub();{const g=games.find(z=>z.id===id);if(g&&g.status==='confirmed'){await saveSnap(id);toast('比分已記錄 ✓')}else toast('已送出，等場上球員確認')}await ensureRounds();return}
     case 'confirm':{t.disabled=true;await rpc('confirm_score',{gid:id});await loadClub();await saveSnap(id);
       // 確認完自動回到房間（房間還開著、自己在房裡）
       const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id),me=myP();UI.edit=null;UI.fill=null;
