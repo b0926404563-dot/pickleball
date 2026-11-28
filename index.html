@@ -396,6 +396,8 @@ h1.vn-h1{margin-top:0}
 .mm-vs{align-self:center;font-weight:900;font-style:italic;color:var(--y)}.mm-p{text-align:center;margin:10px 0 4px;font-size:22px;font-weight:900}.mm-p .pa{color:#A4BFFF}.mm-p .pb{color:#FFAE88}.mm-p small{display:block;font-size:12px;color:var(--mute);font-weight:600}
 .rp-chip.mm-a{background:#7FA6FF;color:#0F1B2D;border-color:#7FA6FF}.rp-chip.mm-b{background:#F2A07B;color:#0F1B2D;border-color:#F2A07B}
 .rp-t .tier,.rp-chip .tier{font-style:normal;margin-left:3px}.rp-warn{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:rgba(253,224,71,.1);border:1px solid rgba(253,224,71,.4);color:#FFED91;font-size:13px}
+.vn-sptabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;margin:4px 0 12px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1)}
+.vn-sptabs button{padding:10px 8px;border:0;border-radius:10px;background:transparent;color:var(--mute);font:inherit;font-size:16px;font-weight:800;cursor:pointer}.vn-sptabs button.on{background:linear-gradient(#FFED91,#FDE047);color:#102A43}
 </style>
 </head>
 <body class="nonav">
@@ -820,7 +822,7 @@ function vCreate(){
   ${f.sport==='badminton'&&f.win2&&+f.target===21?'<p class="mute" style="font-size:13px;margin:0">羽球 30 分封頂：29:29 時下一分獲勝。</p>':''}
   ${f.sport==='pickleball'?`<label class="lb">計分制</label>${seg(f.serve||'rally','fServe',[['rally','落地得分'],['side','發球得分']])}`:''}
   <label class="lb" for="venSel">在哪個道館打</label>
-  <select id="venSel"><option value="" ${f.venue?'':'selected'}>其他場地（不列入道館排行）</option>${[...new Set(VEN.map(v=>v.city))].map(c=>`<optgroup label="${esc(c)}">${VEN.filter(v=>v.city===c).map(v=>`<option value="${v.id}" ${f.venue===v.id?'selected':''}>${esc(v.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+  <select id="venSel"><option value="" ${f.venue?'':'selected'}>其他場地（不列入道館排行）</option>${(VS=>[...new Set(VS.map(v=>v.city))].map(c=>`<optgroup label="${esc(c)}">${VS.filter(v=>v.city===c).map(v=>`<option value="${v.id}" ${f.venue===v.id?'selected':''}>${esc(v.name)}</option>`).join('')}</optgroup>`).join(''))(venOf(f.sport||'pickleball'))}</select>
   ${f.venue?'':`<input type="text" id="place" maxlength="40" value="${esc(f.place)}" placeholder="場地名稱（選填），例如：永康運動中心" style="margin-top:8px">`}
   <label class="lb" for="durSel">場地時間</label>
   <select id="durSel">${[60,90,120,150,180,240].map(m=>`<option value="${m}" ${(+f.dur||120)===m?'selected':''}>${m%60?(m/60).toFixed(1):m/60} 小時（${m} 分鐘）</option>`).join('')}</select>
@@ -1179,22 +1181,25 @@ function vnOwner(B,big){const b=B.boss,self=b&&b.uid===user.id;if(b)needPeople([
   return b?`<div class="vn-owner ${self?'vn-owner--self':''}">${vnHead(b.uid)}<div><small>${ic('crown',13)}${self?'你是本週館主':'本週館主'}${b.weeks>1?`・連任 ${b.weeks} 週`:''}</small><strong>${uName(b.uid)}</strong></div><span class="vn-score">${fmtD(b.sum)}</span></div>`
    :`<div class="vn-owner vn-owner--vacant"><span class="vn-avatar vn-avatar--empty">${ic('crown',big?20:16)}</span><div><small>${ic('crown',13)}本週館主</small><strong>從缺</strong></div><span></span></div>`}
 const vnBoard=(vid,sp)=>venueBoard(vid,sp)||{ranked:[],live:[],pend:[],games:0,boss:null,next:0};
-const vnRanked=sp=>VEN.filter(v=>vnBoard(v.id,sp).ranked.some(x=>x.uid===user.id)).length;
+const venOf=sp=>VEN.filter(v=>!v.sports||!v.sports.length||v.sports.includes(sp));
+const vnRanked=sp=>venOf(sp).filter(v=>vnBoard(v.id,sp).ranked.some(x=>x.uid===user.id)).length;
 // 對戰大廳：道館挑戰
-function vnLobby(sp){if(!VEN.length||!GROWS[sp])return '';
-  const order={boss:0,rank:1,pend:2,new:3},L=VEN.map(v=>{const B=vnBoard(v.id,sp);return {v,B,m:vnMe(B)}}).sort((x,y)=>order[x.m.k]-order[y.m.k]||(y.B.games-x.B.games)||(x.v.sort-y.v.sort)).slice(0,5);
-  const n=vnRanked(sp),tot=VEN.length;
-  return `<section class="vn-challenges" aria-label="道館挑戰"><div class="vn-section-head"><h2>道館挑戰</h2><button class="vn-link" data-act="venAll">所有道館 ${ic('chev',15)}</button></div>
+function vnLobby(sp){if(!VEN.length)return '';const VS=venOf(sp);
+  const tabs=`<div class="vn-sptabs">${[['pickleball','🏓 匹克球場'],['badminton','🏸 羽球場']].map(([k,l])=>`<button class="${sp===k?'on':''}" data-act="fSport" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if(!GROWS[sp]||!VS.length)return `<section class="vn-challenges"><div class="vn-section-head"><h2>道館挑戰</h2></div>${tabs}<p class="mute">${VS.length?'載入中…':'這個運動還沒有道館。'}</p></section>`;
+  const order={boss:0,rank:1,pend:2,new:3},L=VS.map(v=>{const B=vnBoard(v.id,sp);return {v,B,m:vnMe(B)}}).sort((x,y)=>order[x.m.k]-order[y.m.k]||(y.B.games-x.B.games)||(x.v.sort-y.v.sort)).slice(0,5);
+  const n=vnRanked(sp),tot=VS.length;
+  return `<section class="vn-challenges" aria-label="道館挑戰"><div class="vn-section-head"><h2>道館挑戰</h2><button class="vn-link" data-act="venAll">所有道館 ${ic('chev',15)}</button></div>${tabs}
   <div class="vn-progress"><div>${ic('flag',15)}征戰進度・${SP[sp]}</div><b>已上榜 ${n} / ${tot} 館</b><progress max="${tot}" value="${n}" aria-label="已上榜 ${n} / ${tot} 館"></progress></div>
   <div class="vn-track">${L.map(({v,B,m})=>`<article class="vn-feature"><button class="vn-image-link" data-act="venGo" data-id="${v.id}" aria-label="查看 ${esc(v.name)}">${vnMedia(v)}</button>
     <div class="vn-feature-body"><h3>${esc(v.name)}</h3>${vnOwner(B)}<p class="vn-card-status">${m.k==='boss'?'👑 ':''}${esc(m.t)}${m.s?`<span>・${esc(m.s)}</span>`:''}</p>${vnChallenge(B)?`<p class="vn-chal">⚔️ ${vnChallenge(B)}</p>`:''}
     <div class="vn-feature-actions"><button class="vn-button vn-primary" data-act="venRoom" data-id="${v.id}">在這裡開房</button><button class="vn-button" data-act="venGo" data-id="${v.id}">查看道館</button></div></div></article>`).join('')}</div></section>`}
 // 道館總覽
-function vVenues(sp){if(!VEN.length)return `<div class="card"><p class="empty">還沒有道館。</p></div>`;
-  const cities=[...new Set(VEN.map(v=>v.city))],n=vnRanked(sp);
-  return `<div class="vn-overview-line"><span>${cities.length} 座城市・${VEN.length} 座道館</span><b>已上榜 ${n} / ${VEN.length}</b></div>
-  ${cities.length>1?`<div class="vn-citylinks">${cities.map(c=>`<button class="vn-button" data-act="venCity" data-v="${esc(c)}">${esc(c)} ${VEN.filter(v=>v.city===c).length} 座</button>`).join('')}</div>`:''}
-  ${cities.map(c=>{const vs=VEN.filter(v=>v.city===c);return `<section class="vn-city" id="vn-city-${avHash(c)}"><div class="vn-section-head"><h2>${ic('pin',19)} ${esc(c)}</h2><span>${vs.length} 座道館</span></div>
+function vVenues(sp){const VS=venOf(sp);if(!VS.length)return `<div class="card"><p class="empty">${SP[sp]}還沒有道館。</p></div>`;
+  const cities=[...new Set(VS.map(v=>v.city))],n=vnRanked(sp);
+  return `<div class="vn-overview-line"><span>${cities.length} 座城市・${VS.length} 座${SP[sp]}道館</span><b>已上榜 ${n} / ${VS.length}</b></div>
+  ${cities.length>1?`<div class="vn-citylinks">${cities.map(c=>`<button class="vn-button" data-act="venCity" data-v="${esc(c)}">${esc(c)} ${VS.filter(v=>v.city===c).length} 座</button>`).join('')}</div>`:''}
+  ${cities.map(c=>{const vs=VS.filter(v=>v.city===c);return `<section class="vn-city" id="vn-city-${avHash(c)}"><div class="vn-section-head"><h2>${ic('pin',19)} ${esc(c)}</h2><span>${vs.length} 座道館</span></div>
     <div class="vn-stack">${vs.map(v=>{const B=vnBoard(v.id,sp),m=vnMe(B);if(B.boss)needPeople([B.boss.uid]);
       return `<button class="vn-tile" data-act="venGo" data-id="${v.id}">${vnMedia(v)}<div class="vn-tile-body"><h3>${esc(v.name)}</h3>
         <div class="vn-tile-leader">${ic('crown',15)}${B.boss?`本週館主 ${uName(B.boss.uid)}・${fmtD(B.boss.sum)}${B.boss.weeks>1?`・連任 ${B.boss.weeks} 週`:''}`:'本週館主從缺'}</div>
@@ -1507,7 +1512,7 @@ document.addEventListener('click',async e=>{
     case 'create':{const n=$('#cname').value.trim();if(!n){toast('請輸入球團名稱');return}const cid=await rpc('create_club',{p_name:n});await loadClubs();await setDefIfNone(cid);toast('球團建立好了！到「成員」複製邀請連結給朋友');UI.tab='members';return openClub(cid)}
     /* 開房 */
     case 'newRoom':go('create');break;
-    case 'fSport':UI.form.sport=v;UI.form.target=v==='badminton'?21:11;saveForm();break;
+    case 'fSport':UI.form.sport=v;UI.form.target=v==='badminton'?21:11;if(UI.form.venue&&!venOf(v).some(x=>x.id===UI.form.venue))UI.form.venue='';saveForm();break;
     case 'fMode':UI.form.mode=v;saveForm();break;
     case 'fCourts':UI.form.courts=+v;saveForm();break;
     case 'fScore':UI.form.score=v;saveForm();break;
@@ -1617,7 +1622,7 @@ document.addEventListener('click',async e=>{
     case 'venGo':UI.tab='rank';UI.rankScope='ven';UI.venue=id;UI.person=null;UI.rankSport=UI.form.sport||UI.rankSport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
     case 'venAll':UI.tab='rank';UI.rankScope='ven';UI.venue=null;UI.person=null;UI.rankSport=UI.form.sport||UI.rankSport;ls.set('pbc-tab','rank');scrollTo(0,0);break;
     case 'venCity':{const el=document.getElementById('vn-city-'+avHash(v));if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
-    case 'venRoom':{const vv=venById(id);if(!vv)return;UI.form.venue=id;if(UI.tab==='rank'&&UI.rankSport)UI.form.sport=UI.rankSport;saveForm();UI.venue=null;go('create');toast('已預選道館：'+vv.name);break}
+    case 'venRoom':{const vv=venById(id);if(!vv)return;UI.form.venue=id;if(UI.tab==='rank'&&UI.rankSport)UI.form.sport=UI.rankSport;if(vv.sports&&vv.sports.length&&!vv.sports.includes(UI.form.sport)){UI.form.sport=vv.sports[0];UI.form.target=UI.form.sport==='badminton'?21:11}saveForm();UI.venue=null;go('create');toast('已預選道館：'+vv.name);break}
     case 'venBack':UI.venue=null;break;
     case 'pMore':UI.pMore=true;break;
     case 'follow':{t.disabled=true;const {error}=await sb.from('follows').insert({followee:id});if(error&&error.code!=='23505'){toast(errMsg(error));t.disabled=false;return}FOL.add(id);toast('已追蹤，會出現在「好友」排行');break}
