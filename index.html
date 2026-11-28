@@ -395,6 +395,7 @@ h1.vn-h1{margin-top:0}
 .mm-team>b{font-size:13px}.mm-team.a>b{color:#A4BFFF}.mm-team.b>b{color:#FFAE88}.mm-team span{font-size:17px;font-weight:800}.mm-team small{color:var(--mute);font-size:12px}.mm-team .tier{font-style:normal}
 .mm-vs{align-self:center;font-weight:900;font-style:italic;color:var(--y)}.mm-p{text-align:center;margin:10px 0 4px;font-size:22px;font-weight:900}.mm-p .pa{color:#A4BFFF}.mm-p .pb{color:#FFAE88}.mm-p small{display:block;font-size:12px;color:var(--mute);font-weight:600}
 .rp-chip.mm-a{background:#7FA6FF;color:#0F1B2D;border-color:#7FA6FF}.rp-chip.mm-b{background:#F2A07B;color:#0F1B2D;border-color:#F2A07B}
+.rp-t .tier,.rp-chip .tier{font-style:normal;margin-left:3px}.rp-warn{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:rgba(253,224,71,.1);border:1px solid rgba(253,224,71,.4);color:#FFED91;font-size:13px}
 </style>
 </head>
 <body class="nonav">
@@ -725,9 +726,9 @@ function checkUpsets(s){if(!s)return;let seen;try{seen=JSON.parse(localStorage.g
   clearTimeout(UI.upT);UI.upT=setTimeout(()=>{const c=document.querySelector('#mbox .vs-celebrating');if(c)c.classList.remove('vs-celebrating')},2400)}
 function repairModal(id){const g=games.find(x=>x.id===id),r=g&&sessById(g.session_id);if(!g||!r)return;if(UI.rpG!==id){UI.rpG=id;UI.rpF=[]}const F=UI.rpF||[];
       const L=comboList(r,g).filter(x=>F.every(p=>x.a.includes(p)||x.b.includes(p))).slice(0,60);
-      const chips=`<div class="rp-f">${playing(r).map(pid=>`<button class="rp-chip ${F.includes(pid)?'on':''}" data-act="repairF" data-id="${g.id}" data-v="${pid}">${nm(pid)}</button>`).join('')}</div>`;
-      const row=x=>`<button class="rp-c ${x.cur?'cur':''} ${x.ok?'':'nok'}" data-act="repairDo" data-id="${g.id}" data-v="${x.a.join(',')}|${x.b.join(',')}"><span class="rp-t">${x.a.map(nm).join('・')}<i>vs</i>${x.b.map(nm).join('・')}</span><span class="rp-w"><b class="pa">${x.p}%</b>:<b class="pb">${100-x.p}%</b></span>${x.cur?'<em>目前</em>':''}${x.ok?'':'<em class="nok">非 A+B</em>'}</button>`;
-      modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 8px">想讓誰一定上場？先點名字篩選。依勝率接近 50:50 排序，點一下就換成這組。</p>${chips}<div class="rp-list">${L.length?'':'<p class="empty">沒有符合的組合</p>'}${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);}
+      const chips=`<div class="rp-f">${playing(r).map(pid=>`<button class="rp-chip ${F.includes(pid)?'on':''}" data-act="repairF" data-id="${g.id}" data-v="${pid}">${nm(pid)}${isAB(r)?`<i class="tier t${tierOf(r,pid)}">${tierOf(r,pid)}</i>`:''}</button>`).join('')}</div>`;
+      const ab=isAB(r),TN=id=>nm(id)+(ab?`<i class="tier t${tierOf(r,id)}">${tierOf(r,id)}</i>`:'');const row=x=>`<button class="rp-c ${x.cur?'cur':''} ${x.ok?'':'nok'}" data-act="repairDo" data-id="${g.id}" data-v="${x.a.join(',')}|${x.b.join(',')}"><span class="rp-t">${x.a.map(TN).join('・')}<i>vs</i>${x.b.map(TN).join('・')}</span><span class="rp-w"><b class="pa">${x.p}%</b>:<b class="pb">${100-x.p}%</b></span>${x.cur?'<em>目前</em>':''}${x.ok?'':'<em class="nok">非 A+B</em>'}</button>`;
+      modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 8px">想讓誰一定上場？先點名字篩選。依勝率接近 50:50 排序，點一下就換成這組。</p>${chips}${(()=>{if(!isAB(r)||!F.length)return '';const na=F.filter(p=>tierOf(r,p)==='A').length,nb=F.length-na;return na>2||nb>2?`<p class="rp-warn">⚠️ 你選的人有 ${na} 個 A、${nb} 個 B，一場只能各 2 個，所以湊不出 A+B 組合。</p>`:''})()}<div class="rp-list">${L.length?'':'<p class="empty">沒有符合的組合</p>'}${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);}
 async function regenQueued(s){const q=queued(s).filter(g=>!g.started_at);if(!q.length)return;const n=Math.max(1,Math.ceil(q.length/Math.max(1,courtsUsed(s))));
   const {error}=await sb.from('games').delete().in('id',q.map(g=>g.id)).eq('status','open').is('started_at',null);if(error){toast(errMsg(error));return}games=games.filter(g=>!q.includes(g));await genRounds(s,n,q.length)}
 function manModal(){const r=room();if(!r)return;const M=UI.man||(UI.man={a:[],b:[]}),k=per(r)/2,pl=playing(r);
