@@ -734,7 +734,7 @@ async function regenQueued(s){const q=queued(s).filter(g=>!g.started_at);if(!q.l
 function manModal(){const r=room();if(!r)return;const M=UI.man||(UI.man={a:[],b:[]}),tg=M.gid&&games.find(x=>x.id===M.gid),k=per(r)/2,pl=playing(r);
   const where=id=>M.a.includes(id)?'a':M.b.includes(id)?'b':'';const full=M.a.length===k&&M.b.length===k,p=full?pctOf(M.a,M.b,r):null;
   const slot=(t,lab)=>`<div class="mm-team ${t}"><b>${lab}</b>${(M[t].length?M[t].map(id=>`<span>${nm(id)}${isAB(r)?`<i class="tier t${tierOf(r,id)}">${tierOf(r,id)}</i>`:''}</span>`).join(''):'<small>點下面的人加進來</small>')}</div>`;
-  modal(`<h3>${tg?`自己選人：第 ${seqOf(tg,r)} 場`:'手動配一場'}</h3><p class="mute" style="margin:0 0 10px">點一下加進 A 隊，再點一下換到 B 隊，第三下取消。</p>
+  modal(`<h3>${tg?`自己選人：第 ${seqOf(tg,r)} 場`:'手動配一場'}</h3><p class="mute" style="margin:0 0 10px">點名字：空的先補進 A 隊，A 滿了補進 B 隊。點已經在隊上的人會換隊或拿掉，再點別人補上。</p>
     <div class="mm-teams">${slot('a','A 隊')}<span class="mm-vs">VS</span>${slot('b','B 隊')}</div>
     ${full?`<div class="mm-p"><b class="pa">${p}%</b> : <b class="pb">${100-p}%</b><small>預測勝率</small></div>`:''}
     <div class="rp-f">${pl.map(id=>{const w=where(id);return `<button class="rp-chip mm-${w}" data-act="manTap" data-id="${id}">${nm(id)}${w?` → ${w.toUpperCase()}`:''}</button>`}).join('')}</div>
