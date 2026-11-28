@@ -374,7 +374,7 @@ h1.vn-h1{margin-top:0}
 .inv-sc{font-size:19px;font-weight:900;color:var(--y);font-variant-numeric:tabular-nums}.inv-sc small{font-size:12px;color:var(--mute);font-weight:700}
 .inv-x{position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:17px!important;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:22px;line-height:1;cursor:pointer}
 .q-pct{flex:none;font-size:13px;font-weight:800;margin:0 4px;font-variant-numeric:tabular-nums;color:var(--mute)}.q-pct .pa{color:#A4BFFF}.q-pct .pb{color:#FFAE88}
-.rec-btns{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+.rec-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .rp-list{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto}
 .rp-c{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:inherit;font:inherit;cursor:pointer}
 .rp-c.cur{border-color:var(--y);background:rgba(253,224,71,.08)}.rp-t{flex:1;min-width:0;font-size:15px;font-weight:700}.rp-t i{font-style:normal;color:var(--mute);margin:0 6px;font-weight:400}
@@ -731,14 +731,14 @@ function repairModal(id){const g=games.find(x=>x.id===id),r=g&&sessById(g.sessio
       modal(`<h3>第 ${seqOf(g,r)} 場：選一個組合</h3><p class="mute" style="margin:0 0 8px">想讓誰一定上場？先點名字篩選。依勝率接近 50:50 排序，點一下就換成這組。</p>${chips}${(()=>{if(!isAB(r)||!F.length)return '';const na=F.filter(p=>tierOf(r,p)==='A').length,nb=F.length-na;return na>2||nb>2?`<p class="rp-warn">⚠️ 你選的人有 ${na} 個 A、${nb} 個 B，一場只能各 2 個，所以湊不出 A+B 組合。</p>`:''})()}<div class="rp-list">${L.length?'':'<p class="empty">沒有符合的組合</p>'}${L.map(row).join('')}</div><button class="btn wide" data-act="close" style="margin-top:10px">取消</button>`);}
 async function regenQueued(s){const q=queued(s).filter(g=>!g.started_at);if(!q.length)return;const n=Math.max(1,Math.ceil(q.length/Math.max(1,courtsUsed(s))));
   const {error}=await sb.from('games').delete().in('id',q.map(g=>g.id)).eq('status','open').is('started_at',null);if(error){toast(errMsg(error));return}games=games.filter(g=>!q.includes(g));await genRounds(s,n,q.length)}
-function manModal(){const r=room();if(!r)return;const M=UI.man||(UI.man={a:[],b:[]}),k=per(r)/2,pl=playing(r);
+function manModal(){const r=room();if(!r)return;const M=UI.man||(UI.man={a:[],b:[]}),tg=M.gid&&games.find(x=>x.id===M.gid),k=per(r)/2,pl=playing(r);
   const where=id=>M.a.includes(id)?'a':M.b.includes(id)?'b':'';const full=M.a.length===k&&M.b.length===k,p=full?pctOf(M.a,M.b,r):null;
   const slot=(t,lab)=>`<div class="mm-team ${t}"><b>${lab}</b>${(M[t].length?M[t].map(id=>`<span>${nm(id)}${isAB(r)?`<i class="tier t${tierOf(r,id)}">${tierOf(r,id)}</i>`:''}</span>`).join(''):'<small>點下面的人加進來</small>')}</div>`;
-  modal(`<h3>手動配一場</h3><p class="mute" style="margin:0 0 10px">點一下加進 A 隊，再點一下換到 B 隊，第三下取消。</p>
+  modal(`<h3>${tg?`自己選人：第 ${seqOf(tg,r)} 場`:'手動配一場'}</h3><p class="mute" style="margin:0 0 10px">點一下加進 A 隊，再點一下換到 B 隊，第三下取消。</p>
     <div class="mm-teams">${slot('a','A 隊')}<span class="mm-vs">VS</span>${slot('b','B 隊')}</div>
     ${full?`<div class="mm-p"><b class="pa">${p}%</b> : <b class="pb">${100-p}%</b><small>預測勝率</small></div>`:''}
     <div class="rp-f">${pl.map(id=>{const w=where(id);return `<button class="rp-chip mm-${w}" data-act="manTap" data-id="${id}">${nm(id)}${w?` → ${w.toUpperCase()}`:''}</button>`}).join('')}</div>
-    <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="manDo" ${full?'':'disabled'}>排成下一場</button><button class="btn" data-act="close">取消</button></div>`)}
+    <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="manDo" ${full?'':'disabled'}>${tg?'就這樣打':'排成下一場'}</button><button class="btn" data-act="close">取消</button></div>`)}
 function canFix(g){if(!g||g.status!=='confirmed'||!g.ended_at||Date.now()-Date.parse(g.ended_at)>30*60e3)return false;const me=myP(),s=sessById(g.session_id);return !!(me&&sideOf(g,me.id))||!!(s&&s.created_by===user.id)}
 function pendingCard(){
   const list=toConfirm();if(!list.length)return '';
@@ -981,7 +981,7 @@ function vPlay(s){
   if(isHost(s))setTimeout(()=>topUp(s,queued(s),onCourt(s)),400);
   const me=myP(),mid=me&&me.id,host=isHost(s),gl=gamesOf(s.id),on=onCourt(s),q=queued(s),rec=nextRec(s),busy=busyIds(s),fc=freeCourts(s),inR=inRoom(s,mid);
   const waitIds=playing(s).filter(id=>!busy.has(id)),done=gl.filter(g=>g.status!=='open').reverse();
-  const fixBtn=g=>host&&!g.started_at?`<button class="btn sm ghost" data-act="repairAsk" data-id="${g.id}" aria-label="重新配對第 ${seqOf(g,s)} 場">🔀</button>`:'';
+  const fixBtn=g=>host&&!g.started_at?`<button class="btn sm ghost" data-act="manAsk" data-id="${g.id}" aria-label="自己選第 ${seqOf(g,s)} 場的人">✋</button><button class="btn sm ghost" data-act="repairAsk" data-id="${g.id}" aria-label="推薦組合第 ${seqOf(g,s)} 場">🔀</button>`:'';
   const startBtn=g=>host?`<button class="btn sm ${g===rec?'pri':''}" data-act="gStart" data-id="${g.id}" ${!fc||[...g.a,...g.b].some(id=>busy.has(id))?'disabled':''}>開始這場</button>`:'';
   return `<button class="btn sm ghost" data-tab="today">‹ 對戰大廳</button>
   ${roomVenue(s)}<h1 style="margin-top:10px">房間比賽中</h1><p class="sub">${esc(roomName(s))}・${modeTxt(s)}・${ruleTxt(s)}・${s.cfg.score==='live'?'即時計分':'打完填比分'}${s.code?'・代碼 '+esc(s.code):''}</p>
@@ -992,7 +992,7 @@ function vPlay(s){
     ${host?`<p class="mute" style="margin:0 0 12px">要收工就結束活動；還想打，就再加一輪。</p><div class="row2"><button class="btn pri" data-act="endAsk">結束今天的活動</button><button class="btn" data-act="addRound">再加一輪</button></div>`:'<p class="mute" style="margin:0">等房主結束今天的活動。</p>'}</div>`:''}
   ${host?`<details class="card pair-card" ${UI.pairOpen?'open':''}><summary><b>分組・配對</b><span class="mute">${isAB(s)?'A強 B弱 搭配':'自動平衡'}・點開設定</span></summary>${pairBox(s)}<button class="btn wide" data-act="manAsk" style="margin-top:12px">✋ 手動配一場</button></details>`:''}
   ${rec?`<h2>建議下一場</h2><div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(rec,s)} 場</b>${fc?'<span class="pill y">有空場地</span>':'<span class="pill">等場地空出</span>'}</div>${matchRow(rec,s,mid)}
-    ${host?`<div class="rec-btns"><button class="btn pri" data-act="gStart" data-id="${rec.id}" ${fc?'':'disabled'}>${fc?'開始這場':'場地都在使用中'}</button><button class="btn" data-act="repairAsk" data-id="${rec.id}">🔀 重新配對</button></div>`:''}</div>`:''}
+    ${host?`<button class="btn pri wide" style="margin-top:12px" data-act="gStart" data-id="${rec.id}" ${fc?'':'disabled'}>${fc?'開始這場':'場地都在使用中'}</button><div class="rec-btns"><button class="btn" data-act="manAsk" data-id="${rec.id}">✋ 自己選人</button><button class="btn" data-act="repairAsk" data-id="${rec.id}">🔀 推薦組合</button></div>`:''}</div>`:''}
   ${on.length||!rec?`<h2>場上對戰${on.length?`（${on.length}／${(s.cfg&&s.cfg.courts)||1} 面）`:''}</h2>
   ${on.length?on.map(g=>{const sc=s.cfg.score==='live'?scoreOf(g).join(' – '):'';return `<div class="card hl"><div class="split" style="margin-bottom:8px"><b>第 ${seqOf(g,s)} 場</b><span class="pill live">正在對戰</span></div>${matchRow(g,s,mid,sc)}
     <div class="row2" style="margin-top:12px"><button class="btn pri" data-act="openGame" data-id="${g.id}">${s.cfg.score==='live'?'前往即時計分':'填比分'}</button>${host?`<button class="btn ghost" data-act="gStop" data-id="${g.id}">取消開打</button>`:'<span></span>'}</div></div>`}).join('')
@@ -1552,12 +1552,12 @@ document.addEventListener('click',async e=>{
     case 'rPair':{const r=room();if(!r)return;await saveSess(r,{cfg:Object.assign({},r.cfg,{pair:v})});if(r.status==='live'&&queued(r).length){await regenQueued(r);toast(v==='ab'?'已改成 A+B 搭配，還沒打的場次重新配好了':'已改成自動平衡，還沒打的場次重新配好了')}return}
     case 'rTier':{const r=room();if(!r)return;const tier=Object.assign({},(r.cfg||{}).tier||{});playing(r).forEach(p=>{if(!tier[p])tier[p]=tierOf(r,p)});tier[id]=v;await saveSess(r,{cfg:Object.assign({},r.cfg,{tier})});
       if(r.status==='live'&&isAB(r)&&queued(r).length){clearTimeout(UI.tierT);UI.tierT=setTimeout(async()=>{const rr=room();if(rr){await regenQueued(rr);toast('組別更新，還沒打的場次重新配好了')}},1200)}return}
-    case 'manAsk':UI.man={a:[],b:[]};manModal();return
+    case 'manAsk':{const g=id&&games.find(x=>x.id===id);UI.man=g?{a:g.a.slice(),b:g.b.slice(),gid:g.id}:{a:[],b:[]};manModal();return}
     case 'manTap':{const M=UI.man||(UI.man={a:[],b:[]}),r=room(),k=r?per(r)/2:2;if(M.a.includes(id)){M.a=M.a.filter(x=>x!==id);if(M.b.length<k)M.b.push(id)}else if(M.b.includes(id)){M.b=M.b.filter(x=>x!==id)}else{if(M.a.length<k)M.a.push(id);else if(M.b.length<k)M.b.push(id);else toast('兩隊都滿了，先點掉一個人')}manModal();return}
-    case 'manDo':{closeModal();const r=room(),M=UI.man;if(!r||!M)return;const q=queued(r).filter(g=>!g.started_at),tgt=nextRec(r)||q[0];
+    case 'manDo':{closeModal();const r=room(),M=UI.man;if(!r||!M)return;const q=queued(r).filter(g=>!g.started_at),tgt=(M.gid&&q.find(g=>g.id===M.gid))||nextRec(r)||q[0];
       const rn=tgt?tgt.rn:Math.max(0,...gamesOf(r.id).map(g=>g.rn))+1,court=tgt?tgt.court:1;
       if(tgt){const {error}=await sb.from('games').delete().eq('id',tgt.id).eq('status','open').is('started_at',null);if(error){toast(errMsg(error));return}}
-      const {error:e2}=await sb.from('games').insert([{session_id:r.id,club_id:r.club_id,rn,court,a:M.a,b:M.b}]);if(e2)toast(errMsg(e2));else toast('已排成下一場');UI.man=null;await loadClub();return}
+      const {error:e2}=await sb.from('games').insert([{session_id:r.id,club_id:r.club_id,rn,court,a:M.a,b:M.b}]);if(e2)toast(errMsg(e2));else toast(M.gid?'已改成你選的組合':'已排成下一場');UI.man=null;await loadClub();return}
     case 'repairF':{const f=UI.rpF||(UI.rpF=[]);const i=f.indexOf(v);i>=0?f.splice(i,1):f.push(v);repairModal(id);return}
     case 'repairAsk':repairModal(id);return
     case 'repairDo':{closeModal();const g=games.find(x=>x.id===id);if(!g||g.started_at||g.status!=='open'){toast('這場已經開始，不能換了');return}const [a,b]=(v||'').split('|').map(x=>x.split(','));
